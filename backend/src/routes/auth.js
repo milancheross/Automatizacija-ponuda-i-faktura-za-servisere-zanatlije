@@ -8,16 +8,15 @@ const authMiddleware = require('../middleware/auth');
 
 const router = express.Router();
 
-/**
- * Generate a signed JWT for a given user ID.
- */
-function signToken(userId) {
-  return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '30d' });
+function signToken(userId, email) {
+  return jwt.sign(
+    { userId, email },
+    process.env.JWT_SECRET,
+    { expiresIn: '30d' }
+  );
 }
 
-// ---------------------------------------------------------------------------
 // POST /auth/register
-// ---------------------------------------------------------------------------
 router.post('/register', async (req, res, next) => {
   try {
     const { email, password, company_name, address, pib, phone } = req.body;
@@ -25,20 +24,19 @@ router.post('/register', async (req, res, next) => {
     if (!email || !password) {
       return res.status(400).json({ error: 'email and password are required' });
     }
-
     if (password.length < 6) {
-      return res.status(400).json({ error: 'Password must be at least 6 characters' });
+      return res.status(400).json({ error: 'password must be at least 6 characters' });
     }
 
     // Check if email already exists
     const { data: existing } = await supabase
       .from('users')
       .select('id')
-      .eq('email', email.toLowerCase().trim())
+      .eq('email', email.toLowerCase())
       .maybeSingle();
 
     if (existing) {
-      return res.status(409).json({ error: 'Email already in use' });
+      return res.status(409).json({ error: 'Email already registered' });
     }
 
     const password_hash = await bcrypt.hash(password, 12);
@@ -46,7 +44,7 @@ router.post('/register', async (req, res, next) => {
     const { data: user, error } = await supabase
       .from('users')
       .insert({
-        email: email.toLowerCase().trim(),
+        email: email.toLowerCase(),
         password_hash,
         company_name: company_name || null,
         address: address || null,
@@ -56,11 +54,9 @@ router.post('/register', async (req, res, next) => {
       .select('id, email, company_name, logo_url, address, pib, phone, created_at')
       .single();
 
-    if (error) {
-      return next(error);
-    }
+    if (error) throw error;
 
-    const token = signToken(user.id);
+    const token = signToken(user.id, user.email);
 
     return res.status(201).json({ token, user });
   } catch (err) {
@@ -68,9 +64,7 @@ router.post('/register', async (req, res, next) => {
   }
 });
 
-// ---------------------------------------------------------------------------
 // POST /auth/login
-// ---------------------------------------------------------------------------
 router.post('/login', async (req, res, next) => {
   try {
     const { email, password } = req.body;
@@ -82,11 +76,10 @@ router.post('/login', async (req, res, next) => {
     const { data: user, error } = await supabase
       .from('users')
       .select('id, email, password_hash, company_name, logo_url, address, pib, phone, expo_push_token, created_at')
-      .eq('email', email.toLowerCase().trim())
+      .eq('email', email.toLowerCase())
       .maybeSingle();
 
-    if (error) return next(error);
-
+    if (error) throw error;
     if (!user) {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
@@ -96,53 +89,30 @@ router.post('/login', async (req, res, next) => {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
-    const token = signToken(user.id);
+    const { password_hash, ...userWithoutPassword } = user;
+    const token = signToken(user.id, user.email);
 
-    // Don't return password_hash
-    const { password_hash, ...safeUser } = user;
-
-    return res.json({ token, user: safeUser });
+    return res.json({ token, user: userWithoutPassword });
   } catch (err) {
     next(err);
   }
 });
 
-// ---------------------------------------------------------------------------
-// GET /auth/profile  (authenticated)
-// ---------------------------------------------------------------------------
-router.get('/profile', authMiddleware, async (req, res, next) => {
-  try {
-    const { data: user, error } = await supabase
-      .from('users')
-      .select('id, email, company_name, logo_url, address, pib, phone, expo_push_token, created_at')
-      .eq('id', req.userId)
-      .single();
-
-    if (error) return next(error);
-    if (!user) return res.status(404).json({ error: 'User not found' });
-
-    return res.json({ user });
-  } catch (err) {
-    next(err);
-  }
-});
-
-// ---------------------------------------------------------------------------
-// PUT /auth/profile  (authenticated)
-// ---------------------------------------------------------------------------
+// PUT /auth/profile — update profile (authenticated)
 router.put('/profile', authMiddleware, async (req, res, next) => {
   try {
-    const allowed = ['company_name', 'logo_url', 'address', 'pib', 'phone', 'expo_push_token'];
-    const updates = {};
+    const { company_name, logo_url, address, pib, phone, expo_push_token } = req.body;
 
-    for (const key of allowed) {
-      if (req.body[key] !== undefined) {
-        updates[key] = req.body[key];
-      }
-    }
+    const updates = {};
+    if (company_name     !== undefined) updates.company_name    = company_name;
+    if (logo_url         !== undefined) updates.logo_url        = logo_url;
+    if (address          !== undefined) updates.address         = address;
+    if (pib              !== undefined) updates.pib             = pib;
+    if (phone            !== undefined) updates.phone           = phone;
+    if (expo_push_token  !== undefined) updates.expo_push_token = expo_push_token;
 
     if (Object.keys(updates).length === 0) {
-      return res.status(400).json({ error: 'No updatable fields provided' });
+      return res.status(400).json({ error: 'No fields to update' });
     }
 
     const { data: user, error } = await supabase
@@ -152,7 +122,25 @@ router.put('/profile', authMiddleware, async (req, res, next) => {
       .select('id, email, company_name, logo_url, address, pib, phone, expo_push_token, created_at')
       .single();
 
-    if (error) return next(error);
+    if (error) throw error;
+
+    return res.json({ user });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /auth/profile — get current user (authenticated)
+router.get('/profile', authMiddleware, async (req, res, next) => {
+  try {
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('id, email, company_name, logo_url, address, pib, phone, expo_push_token, created_at')
+      .eq('id', req.userId)
+      .single();
+
+    if (error) throw error;
+    if (!user) return res.status(404).json({ error: 'User not found' });
 
     return res.json({ user });
   } catch (err) {

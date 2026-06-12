@@ -5,39 +5,25 @@ const supabase = require('../db');
 const authMiddleware = require('../middleware/auth');
 
 const router = express.Router();
-
-// All routes require authentication
 router.use(authMiddleware);
 
-// ---------------------------------------------------------------------------
-// GET /clients
-// ---------------------------------------------------------------------------
+// GET /clients — list all clients for authenticated user
 router.get('/', async (req, res, next) => {
   try {
-    const { search } = req.query;
-
-    let query = supabase
+    const { data, error } = await supabase
       .from('clients')
       .select('*')
       .eq('user_id', req.userId)
       .order('name', { ascending: true });
 
-    if (search) {
-      query = query.or(`name.ilike.%${search}%,phone.ilike.%${search}%,email.ilike.%${search}%`);
-    }
-
-    const { data, error } = await query;
-    if (error) return next(error);
-
+    if (error) throw error;
     return res.json({ clients: data });
   } catch (err) {
     next(err);
   }
 });
 
-// ---------------------------------------------------------------------------
-// GET /clients/:id
-// ---------------------------------------------------------------------------
+// GET /clients/:id — get single client
 router.get('/:id', async (req, res, next) => {
   try {
     const { data, error } = await supabase
@@ -47,7 +33,7 @@ router.get('/:id', async (req, res, next) => {
       .eq('user_id', req.userId)
       .maybeSingle();
 
-    if (error) return next(error);
+    if (error) throw error;
     if (!data) return res.status(404).json({ error: 'Client not found' });
 
     return res.json({ client: data });
@@ -56,43 +42,48 @@ router.get('/:id', async (req, res, next) => {
   }
 });
 
-// ---------------------------------------------------------------------------
-// POST /clients
-// ---------------------------------------------------------------------------
+// POST /clients — create client
 router.post('/', async (req, res, next) => {
   try {
     const { name, phone, email, address } = req.body;
 
-    if (!name || !name.trim()) {
-      return res.status(400).json({ error: 'name is required' });
-    }
+    if (!name) return res.status(400).json({ error: 'name is required' });
 
     const { data, error } = await supabase
       .from('clients')
       .insert({
         user_id: req.userId,
-        name: name.trim(),
+        name,
         phone: phone || null,
-        email: email ? email.toLowerCase().trim() : null,
+        email: email || null,
         address: address || null,
       })
       .select('*')
       .single();
 
-    if (error) return next(error);
-
+    if (error) throw error;
     return res.status(201).json({ client: data });
   } catch (err) {
     next(err);
   }
 });
 
-// ---------------------------------------------------------------------------
-// PUT /clients/:id
-// ---------------------------------------------------------------------------
+// PUT /clients/:id — update client
 router.put('/:id', async (req, res, next) => {
   try {
-    // Verify ownership first
+    const { name, phone, email, address } = req.body;
+
+    const updates = {};
+    if (name    !== undefined) updates.name    = name;
+    if (phone   !== undefined) updates.phone   = phone;
+    if (email   !== undefined) updates.email   = email;
+    if (address !== undefined) updates.address = address;
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ error: 'No fields to update' });
+    }
+
+    // Ensure the client belongs to this user
     const { data: existing } = await supabase
       .from('clients')
       .select('id')
@@ -102,46 +93,21 @@ router.put('/:id', async (req, res, next) => {
 
     if (!existing) return res.status(404).json({ error: 'Client not found' });
 
-    const allowed = ['name', 'phone', 'email', 'address'];
-    const updates = {};
-
-    for (const key of allowed) {
-      if (req.body[key] !== undefined) {
-        updates[key] = req.body[key];
-      }
-    }
-
-    if (updates.name !== undefined && !updates.name.trim()) {
-      return res.status(400).json({ error: 'name cannot be empty' });
-    }
-
-    if (updates.email) {
-      updates.email = updates.email.toLowerCase().trim();
-    }
-
-    if (Object.keys(updates).length === 0) {
-      return res.status(400).json({ error: 'No updatable fields provided' });
-    }
-
     const { data, error } = await supabase
       .from('clients')
       .update(updates)
       .eq('id', req.params.id)
-      .eq('user_id', req.userId)
       .select('*')
       .single();
 
-    if (error) return next(error);
-
+    if (error) throw error;
     return res.json({ client: data });
   } catch (err) {
     next(err);
   }
 });
 
-// ---------------------------------------------------------------------------
-// DELETE /clients/:id
-// ---------------------------------------------------------------------------
+// DELETE /clients/:id — delete client
 router.delete('/:id', async (req, res, next) => {
   try {
     const { data: existing } = await supabase
@@ -156,11 +122,9 @@ router.delete('/:id', async (req, res, next) => {
     const { error } = await supabase
       .from('clients')
       .delete()
-      .eq('id', req.params.id)
-      .eq('user_id', req.userId);
+      .eq('id', req.params.id);
 
-    if (error) return next(error);
-
+    if (error) throw error;
     return res.json({ message: 'Client deleted' });
   } catch (err) {
     next(err);
