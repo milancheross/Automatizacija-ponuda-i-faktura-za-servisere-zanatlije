@@ -319,3 +319,45 @@ export async function getInvoice(id: number): Promise<Invoice> {
 export async function markPaid(id: number): Promise<Invoice> {
   return apiFetch(`/api/invoices/${id}/pay`, { method: 'POST' });
 }
+
+// ─── Quick Quote ───────────────────────────────────────────────────────────────
+
+export interface QuickQuoteData {
+  client_name: string;
+  client_phone?: string;
+  description: string;
+  price: number;
+}
+
+export interface QuickQuoteResult {
+  quote_id: number;
+  tracking_url: string;
+  tracking_token: string;
+  client_id: number;
+}
+
+export async function quickQuote(data: QuickQuoteData): Promise<QuickQuoteResult> {
+  return apiFetch('/quotes/quick', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+// ─── Analytics ────────────────────────────────────────────────────────────────
+
+export interface FunnelData {
+  sent: number;
+  opened: number;
+  accepted: number;
+  declined: number;
+  open_rate: number;
+  accept_rate: number;
+}
+
+export interface AnalyticsFunnel {
+  funnel: FunnelData;
+}
+
+export async function getAnalyticsFunnel(): Promise<AnalyticsFunnel> {
+  return apiFetch('/analytics/funnel');
+}

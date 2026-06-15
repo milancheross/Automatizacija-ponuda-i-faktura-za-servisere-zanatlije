@@ -5,6 +5,7 @@ const { v4: uuidv4 } = require('uuid');
 const supabase = require('../db');
 const authMiddleware = require('../middleware/auth');
 const { sendPushNotification } = require('../utils/notifications');
+const { logEvent } = require('../utils/events');
 
 const router = express.Router();
 
@@ -44,6 +45,8 @@ router.get('/track/:token', async (req, res, next) => {
         .from('quotes')
         .update({ opened_at: new Date().toISOString() })
         .eq('id', quote.id);
+
+      await logEvent(quote.id, quote.user_id, 'quote_opened', {});
 
       // Use the already-joined users data (contains expo_push_token)
       const userData = quote.users;
@@ -103,6 +106,8 @@ router.post('/track/:token/respond', async (req, res, next) => {
     const newStatus = accepted ? 'accepted' : 'declined';
     await supabase.from('quotes').update({ status: newStatus }).eq('id', quote.id);
 
+    await logEvent(quote.id, quote.user_id, accepted ? 'quote_accepted' : 'quote_declined', {});
+
     const pushToken = quote.users?.expo_push_token;
     if (pushToken) {
       const clientName = quote.clients?.name || 'Klijent';
@@ -119,6 +124,85 @@ router.post('/track/:token/respond', async (req, res, next) => {
 
 // All routes below require authentication
 router.use(authMiddleware);
+
+// ---------------------------------------------------------------------------
+// POST /quotes/quick — TTFV: create client + quote + send in one request
+// ---------------------------------------------------------------------------
+router.post('/quick', async (req, res, next) => {
+  try {
+    const { client_name, client_phone, description, price } = req.body;
+
+    if (!client_name || !description || !price) {
+      return res.status(400).json({ error: 'client_name, description, and price are required' });
+    }
+
+    const parsedPrice = parseFloat(price);
+    if (isNaN(parsedPrice) || parsedPrice <= 0) {
+      return res.status(400).json({ error: 'price must be a positive number' });
+    }
+
+    // 1. Find or create client
+    let clientId;
+    if (client_phone) {
+      const { data: existing } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('user_id', req.userId)
+        .eq('phone', client_phone.trim())
+        .maybeSingle();
+      if (existing) {
+        clientId = existing.id;
+      }
+    }
+
+    if (!clientId) {
+      const { data: newClient, error: clientErr } = await supabase
+        .from('clients')
+        .insert({ user_id: req.userId, name: client_name.trim(), phone: client_phone?.trim() || null })
+        .select('id')
+        .single();
+      if (clientErr) throw clientErr;
+      clientId = newClient.id;
+    }
+
+    // 2. Create quote with single item
+    const item = { name: description.trim(), unit: 'paušal', quantity: 1, price: parsedPrice, total: parsedPrice };
+    const trackingToken = uuidv4();
+
+    const { data: quote, error: quoteErr } = await supabase
+      .from('quotes')
+      .insert({
+        user_id: req.userId,
+        client_id: clientId,
+        status: 'sent',
+        discount_percent: 0,
+        total_amount: parsedPrice,
+        tracking_token: trackingToken,
+        sent_at: new Date().toISOString(),
+      })
+      .select('id')
+      .single();
+    if (quoteErr) throw quoteErr;
+
+    // 3. Insert quote item
+    await supabase.from('quote_items').insert({ ...item, quote_id: quote.id });
+
+    // 4. Log events
+    await logEvent(quote.id, req.userId, 'quote_created', { method: 'quick' });
+    await logEvent(quote.id, req.userId, 'quote_sent', { method: 'quick' });
+
+    const trackingUrl = `${process.env.APP_URL || 'http://localhost:3000'}/q/${trackingToken}`;
+
+    return res.status(201).json({
+      quote_id: quote.id,
+      tracking_url: trackingUrl,
+      tracking_token: trackingToken,
+      client_id: clientId,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
 
 // ---------------------------------------------------------------------------
 // Helper: calculate total from items and discount
@@ -210,6 +294,8 @@ router.post('/', async (req, res, next) => {
       if (itemError) throw itemError;
       insertedItems = itemRows;
     }
+
+    await logEvent(quote.id, req.userId, 'quote_created', {});
 
     return res.status(201).json({ quote: { ...quote, items: insertedItems } });
   } catch (err) {
@@ -373,6 +459,8 @@ router.post('/:id/send', async (req, res, next) => {
       .single();
 
     if (error) throw error;
+
+    await logEvent(req.params.id, req.userId, 'quote_sent', {});
 
     return res.json({ quote, tracking_url: trackingUrl });
   } catch (err) {

@@ -135,3 +135,18 @@ CREATE POLICY quote_items_owner ON quote_items
 CREATE POLICY invoices_owner ON invoices
   USING (user_id = auth.uid())
   WITH CHECK (user_id = auth.uid());
+
+-- Event tracking for TTFV analytics
+CREATE TABLE IF NOT EXISTS quote_events (
+    id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    quote_id    uuid REFERENCES quotes(id) ON DELETE CASCADE,
+    user_id     uuid REFERENCES users(id) ON DELETE CASCADE,
+    event_type  varchar(50) NOT NULL,
+    -- quote_created | quote_sent | quote_opened | quote_accepted | quote_declined
+    meta        jsonb DEFAULT '{}',
+    created_at  timestamptz DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS quote_events_quote_id_idx ON quote_events(quote_id);
+CREATE INDEX IF NOT EXISTS quote_events_user_id_idx  ON quote_events(user_id);
+CREATE INDEX IF NOT EXISTS quote_events_type_idx     ON quote_events(event_type);

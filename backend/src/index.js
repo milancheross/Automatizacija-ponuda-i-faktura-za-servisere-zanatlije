@@ -11,6 +11,7 @@ const clientsRoutes    = require('./routes/clients');
 const priceItemsRoutes = require('./routes/priceItems');
 const quotesRoutes     = require('./routes/quotes');
 const invoicesRoutes   = require('./routes/invoices');
+const analyticsRoutes  = require('./routes/analytics');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -53,6 +54,7 @@ app.use('/clients',     clientsRoutes);
 app.use('/price-items', priceItemsRoutes);
 app.use('/quotes',      quotesRoutes);
 app.use('/invoices',    invoicesRoutes);
+app.use('/analytics',  analyticsRoutes);
 
 // Root health-check
 app.get('/', (_req, res) => {
