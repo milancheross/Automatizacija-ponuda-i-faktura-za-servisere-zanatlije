@@ -361,3 +361,54 @@ export interface AnalyticsFunnel {
 export async function getAnalyticsFunnel(): Promise<AnalyticsFunnel> {
   return apiFetch('/analytics/funnel');
 }
+
+// ─── Jobs ────────────────────────────────────────────────────────────────────
+
+export type JobStatus = 'zakazano' | 'u_toku' | 'zavrseno';
+
+export interface Job {
+  id: string;
+  title: string;
+  status: JobStatus;
+  scheduled_at?: string;
+  note?: string;
+  created_at: string;
+  updated_at: string;
+  clients?: { id: string; name: string; phone?: string; email?: string; address?: string };
+  quotes?: { id: string; total_amount: number };
+}
+
+export interface CreateJobData {
+  quote_id?: string | number;
+  client_id: string | number;
+  title: string;
+  scheduled_at?: string;
+  note?: string;
+}
+
+export async function getJobs(status?: JobStatus): Promise<Job[]> {
+  const qs = status ? `?status=${status}` : '';
+  const data = await apiFetch<{ jobs: Job[] }>(`/jobs${qs}`);
+  return data.jobs;
+}
+
+export async function getJob(id: string): Promise<Job> {
+  const data = await apiFetch<{ job: Job }>(`/jobs/${id}`);
+  return data.job;
+}
+
+export async function createJob(d: CreateJobData): Promise<Job> {
+  const data = await apiFetch<{ job: Job }>('/jobs', {
+    method: 'POST',
+    body: JSON.stringify(d),
+  });
+  return data.job;
+}
+
+export async function updateJob(id: string, updates: Partial<Pick<Job, 'status' | 'scheduled_at' | 'note' | 'title'>>): Promise<Job> {
+  const data = await apiFetch<{ job: Job }>(`/jobs/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(updates),
+  });
+  return data.job;
+}

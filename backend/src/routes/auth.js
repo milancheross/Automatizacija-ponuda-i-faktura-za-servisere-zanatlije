@@ -5,6 +5,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const supabase = require('../db');
 const authMiddleware = require('../middleware/auth');
+const { logEvent } = require('../utils/events');
 
 const router = express.Router();
 
@@ -57,6 +58,8 @@ router.post('/register', async (req, res, next) => {
     if (error) throw error;
 
     const token = signToken(user.id, user.email);
+
+    await logEvent(null, user.id, 'user_registered', { email: user.email });
 
     return res.status(201).json({ token, user });
   } catch (err) {

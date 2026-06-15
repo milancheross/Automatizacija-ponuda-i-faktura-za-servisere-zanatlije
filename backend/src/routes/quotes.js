@@ -5,7 +5,7 @@ const { v4: uuidv4 } = require('uuid');
 const supabase = require('../db');
 const authMiddleware = require('../middleware/auth');
 const { sendPushNotification } = require('../utils/notifications');
-const { logEvent } = require('../utils/events');
+const { logEvent, logFirstEvent } = require('../utils/events');
 
 const router = express.Router();
 
@@ -47,6 +47,7 @@ router.get('/track/:token', async (req, res, next) => {
         .eq('id', quote.id);
 
       await logEvent(quote.id, quote.user_id, 'quote_opened', {});
+      await logFirstEvent(quote.user_id, 'first_quote_opened', {});
 
       // Use the already-joined users data (contains expo_push_token)
       const userData = quote.users;
@@ -107,6 +108,7 @@ router.post('/track/:token/respond', async (req, res, next) => {
     await supabase.from('quotes').update({ status: newStatus }).eq('id', quote.id);
 
     await logEvent(quote.id, quote.user_id, accepted ? 'quote_accepted' : 'quote_declined', {});
+    if (accepted) await logFirstEvent(quote.user_id, 'first_quote_accepted', {});
 
     const pushToken = quote.users?.expo_push_token;
     if (pushToken) {
@@ -190,6 +192,8 @@ router.post('/quick', async (req, res, next) => {
     // 4. Log events
     await logEvent(quote.id, req.userId, 'quote_created', { method: 'quick' });
     await logEvent(quote.id, req.userId, 'quote_sent', { method: 'quick' });
+    await logFirstEvent(req.userId, 'first_quote_created', { method: 'quick' });
+    await logFirstEvent(req.userId, 'first_quote_sent', { method: 'quick' });
 
     const trackingUrl = `${process.env.APP_URL || 'http://localhost:3000'}/q/${trackingToken}`;
 
@@ -296,6 +300,7 @@ router.post('/', async (req, res, next) => {
     }
 
     await logEvent(quote.id, req.userId, 'quote_created', {});
+    await logFirstEvent(req.userId, 'first_quote_created', { method: 'full' });
 
     return res.status(201).json({ quote: { ...quote, items: insertedItems } });
   } catch (err) {
@@ -461,6 +466,7 @@ router.post('/:id/send', async (req, res, next) => {
     if (error) throw error;
 
     await logEvent(req.params.id, req.userId, 'quote_sent', {});
+    await logFirstEvent(req.userId, 'first_quote_sent', { method: 'full' });
 
     return res.json({ quote, tracking_url: trackingUrl });
   } catch (err) {

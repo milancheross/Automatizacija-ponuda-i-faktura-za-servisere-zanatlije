@@ -1,10 +1,10 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  ActivityIndicator, Alert,
+  ActivityIndicator, Alert, Share,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
-import { getQuote, sendQuote, convertToInvoice, Quote, getClients, Client } from '../../lib/api';
+import { getQuote, sendQuote, convertToInvoice, Quote, getClients, Client, createJob } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { shareQuotePDF } from '../../lib/pdf';
 import StatusBadge from '../../components/StatusBadge';
@@ -18,6 +18,8 @@ export default function QuoteDetailScreen() {
   const [client, setClient] = useState<Client | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [creatingJob, setCreatingJob] = useState(false);
+  const [jobId, setJobId] = useState<string | null>(null);
 
   const loadQuote = useCallback(async () => {
     try {
@@ -76,6 +78,41 @@ export default function QuoteDetailScreen() {
         },
       },
     ]);
+  }
+
+  function needsFollowUp(): boolean {
+    if (!quote || quote.status !== 'poslata') return false;
+    if (!quote.opened_at) return false;
+    const hoursOpen = (Date.now() - new Date(quote.opened_at).getTime()) / (1000 * 60 * 60);
+    return hoursOpen >= 48;
+  }
+
+  async function sendFollowUp() {
+    if (!quote) return;
+    const clientName = quote.client?.name || 'klijente';
+    const message = `Poštovanje ${clientName},\n\nSamo proveravam da li ste stigli da pogledate ponudu.\n\nSrdačan pozdrav.`;
+    await Share.share({ message });
+  }
+
+  async function createJobFromQuote() {
+    if (!quote || !quote.client_id) return;
+    setCreatingJob(true);
+    try {
+      const job = await createJob({
+        quote_id: quote.id,
+        client_id: quote.client_id,
+        title: quote.client?.name ? `Posao — ${quote.client.name}` : 'Novi posao',
+      });
+      setJobId(job.id);
+      Alert.alert('Posao kreiran', 'Ponuda je pretvorena u posao.', [
+        { text: 'Vidi posao', onPress: () => router.push(`/job/${job.id}`) },
+        { text: 'OK' },
+      ]);
+    } catch (err: any) {
+      Alert.alert('Greška', err.message);
+    } finally {
+      setCreatingJob(false);
+    }
   }
 
   async function handleSharePDF() {
@@ -172,6 +209,36 @@ export default function QuoteDetailScreen() {
 
         {/* Actions */}
         <View style={styles.actionsCard}>
+          {needsFollowUp() && (
+            <View style={followUpStyles.banner}>
+              <View style={{ flex: 1 }}>
+                <Text style={followUpStyles.bannerTitle}>Otvoreno pre 2+ dana</Text>
+                <Text style={followUpStyles.bannerSub}>Klijent nije odgovorio.</Text>
+              </View>
+              <TouchableOpacity style={followUpStyles.btn} onPress={sendFollowUp}>
+                <Text style={followUpStyles.btnText}>Pošalji podsetnik</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {(quote?.status === 'accepted' || quote?.status === 'prihvacena') && !jobId && (
+            <TouchableOpacity
+              style={jobStyles.createJobBtn}
+              onPress={createJobFromQuote}
+              disabled={creatingJob}
+            >
+              {creatingJob
+                ? <ActivityIndicator color="#fff" />
+                : <Text style={jobStyles.createJobBtnText}>Pretvori u Posao →</Text>
+              }
+            </TouchableOpacity>
+          )}
+          {jobId && (
+            <TouchableOpacity style={jobStyles.viewJobBtn} onPress={() => router.push(`/job/${jobId}`)}>
+              <Text style={jobStyles.viewJobBtnText}>Vidi posao</Text>
+            </TouchableOpacity>
+          )}
+
           {quote.status === 'nacrt' && (
             <>
               <TouchableOpacity
@@ -251,4 +318,30 @@ const styles = StyleSheet.create({
   pdfBtn: { backgroundColor: '#f0fdf4', borderWidth: 1.5, borderColor: '#86efac' },
   pdfBtnText: { color: '#166534' },
   disabledBtn: { opacity: 0.6 },
+});
+
+const followUpStyles = StyleSheet.create({
+  banner: {
+    backgroundColor: '#fffbeb', borderWidth: 1.5, borderColor: '#fbbf24',
+    borderRadius: 12, padding: 14, flexDirection: 'row', alignItems: 'center',
+    gap: 12, marginBottom: 10,
+  },
+  bannerTitle: { fontSize: 13, fontWeight: '700', color: '#92400e' },
+  bannerSub: { fontSize: 11, color: '#b45309', marginTop: 2 },
+  btn: { backgroundColor: '#f59e0b', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8 },
+  btnText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+});
+
+const jobStyles = StyleSheet.create({
+  createJobBtn: {
+    backgroundColor: '#059669', borderRadius: 12, padding: 16, alignItems: 'center',
+    marginBottom: 8, shadowColor: '#059669', shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25, shadowRadius: 6, elevation: 5,
+  },
+  createJobBtnText: { color: '#fff', fontSize: 15, fontWeight: '800' },
+  viewJobBtn: {
+    borderWidth: 1.5, borderColor: '#059669', borderRadius: 12, padding: 14,
+    alignItems: 'center', marginBottom: 8,
+  },
+  viewJobBtnText: { color: '#059669', fontSize: 14, fontWeight: '600' },
 });

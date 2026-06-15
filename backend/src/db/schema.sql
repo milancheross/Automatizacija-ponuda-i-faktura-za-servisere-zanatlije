@@ -139,10 +139,9 @@ CREATE POLICY invoices_owner ON invoices
 -- Event tracking for TTFV analytics
 CREATE TABLE IF NOT EXISTS quote_events (
     id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    quote_id    uuid REFERENCES quotes(id) ON DELETE CASCADE,
+    quote_id    uuid REFERENCES quotes(id) ON DELETE CASCADE,   -- nullable for user-level events
     user_id     uuid REFERENCES users(id) ON DELETE CASCADE,
     event_type  varchar(50) NOT NULL,
-    -- quote_created | quote_sent | quote_opened | quote_accepted | quote_declined
     meta        jsonb DEFAULT '{}',
     created_at  timestamptz DEFAULT now()
 );
@@ -150,3 +149,22 @@ CREATE TABLE IF NOT EXISTS quote_events (
 CREATE INDEX IF NOT EXISTS quote_events_quote_id_idx ON quote_events(quote_id);
 CREATE INDEX IF NOT EXISTS quote_events_user_id_idx  ON quote_events(user_id);
 CREATE INDEX IF NOT EXISTS quote_events_type_idx     ON quote_events(event_type);
+
+-- Jobs (Poslovi) — created from accepted quotes
+CREATE TABLE IF NOT EXISTS jobs (
+    id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id         uuid REFERENCES users(id) ON DELETE CASCADE,
+    quote_id        uuid REFERENCES quotes(id),
+    client_id       uuid REFERENCES clients(id),
+    title           text NOT NULL,
+    status          varchar(20) DEFAULT 'zakazano',
+    -- zakazano | u_toku | zavrseno
+    scheduled_at    timestamptz,
+    note            text,
+    created_at      timestamptz DEFAULT now(),
+    updated_at      timestamptz DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS jobs_user_id_idx    ON jobs(user_id);
+CREATE INDEX IF NOT EXISTS jobs_quote_id_idx   ON jobs(quote_id);
+CREATE INDEX IF NOT EXISTS jobs_status_idx     ON jobs(status);
