@@ -1,0 +1,1269 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sloba TermoGlow — Pametni Prototip</title>
+    <!-- Tailwind CSS za moderan i atraktivan dizajn -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Alpine.js za brzu, reaktivnu i besprekornu interakciju bez kompajliranja -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- Google Font: Inter za savršenu tipografiju -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom scrollbar za prelep izgled */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #020617;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e1b4b;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #312e81;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100 flex flex-col overflow-x-hidden selection:bg-indigo-500 selection:text-white"
+      x-data="appState()">
+
+    <!-- GLAVNO ZAGLAVLJE SA INSTRUCIJAMA -->
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur px-6 py-4">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+                <div class="flex items-center gap-2">
+                    <span class="p-1.5 bg-indigo-500/10 text-indigo-400 rounded-lg border border-indigo-500/20 animate-pulse">
+                        <!-- SVG Sparkles Icon -->
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
+                    </span>
+                    <h1 class="text-xl font-bold tracking-tight text-white">Sloba TermoGlow — Interaktivni Prototip</h1>
+                </div>
+                <p class="text-xs text-slate-400 mt-1">
+                    Sve akcije koje napravite na telefonu (levo) odmah ažuriraju bazu podataka i klijentski pregled (desno).
+                </p>
+            </div>
+            <div class="flex items-center gap-3 bg-indigo-950/40 border border-indigo-500/20 px-4 py-2 rounded-xl text-xs text-indigo-300">
+                <svg class="w-5 h-5 text-indigo-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <div>
+                    <span class="font-bold">Uputstvo:</span> Klikćite po mobilnom ekranu levo. Iskoristite "Pregled klijenta" desno za live-tracking!
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- GLAVNI RADNI PROSTOR -->
+    <main class="flex-1 w-full max-w-7xl mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        <!-- KOLONA 1: MOBILNI TELEFON (Zanatlijin interfejs) -->
+        <div class="lg:col-span-5 flex flex-col items-center">
+            <div class="text-xs font-semibold text-slate-400 mb-2 uppercase tracking-widest flex items-center gap-2">
+                <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                Zanatlijin Telefon (Mobilna App)
+            </div>
+
+            <!-- Spoljni ram mobilnog telefona sa zvučnim feedback efektom potresa -->
+            <div :class="{'ring-4 ring-indigo-500 scale-[1.01] transition-all duration-150': audioFeedback, 'transition-all duration-300': !audioFeedback}" 
+                 class="w-full max-w-[365px] h-[700px] bg-slate-900 rounded-[48px] border-[8px] border-slate-800 shadow-2xl overflow-hidden relative flex flex-col">
+                
+                <!-- Notch / Zvučnik i kamera na telefonu -->
+                <div class="absolute top-0 left-1/2 transform -translate-x-1/2 w-32 h-5 bg-slate-800 rounded-b-xl z-50 flex items-center justify-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-slate-950"></span>
+                    <span class="w-12 h-0.5 bg-slate-950 rounded-full"></span>
+                </div>
+
+                <!-- Status bar telefona -->
+                <div class="bg-slate-900 px-6 pt-2 pb-1 flex justify-between items-center text-[10px] text-slate-400 font-semibold z-40 select-none">
+                    <span>09:41</span>
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-[8px] px-1 bg-indigo-500/20 text-indigo-400 rounded">5G</span>
+                        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M17.707 9.293a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7a1 1 0 011.414-1.414L10 14.586l6.293-6.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                    </div>
+                </div>
+
+                <!-- PUSH NOTIFIKACIJA NA EKRANU TELEFONA -->
+                <template x-if="activeNotification">
+                    <div class="absolute top-8 left-3 right-3 bg-slate-900/95 border-l-4 border-indigo-500 shadow-2xl rounded-xl p-3 z-50 flex items-start gap-2.5 animate-bounce">
+                        <span class="p-1.5 bg-indigo-500/10 text-indigo-400 rounded-lg">
+                            <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                        </span>
+                        <div class="flex-1 min-w-0">
+                            <h4 class="text-[11px] font-bold text-white flex justify-between items-center">
+                                <span x-text="activeNotification.title"></span>
+                                <span class="text-[8px] font-normal text-slate-500">sada</span>
+                            </h4>
+                            <p class="text-[10px] text-slate-300 mt-0.5 leading-tight truncate" x-text="activeNotification.body"></p>
+                        </div>
+                        <button @click="activeNotification = null" class="text-slate-500 hover:text-slate-300">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
+                    </div>
+                </template>
+
+                <!-- EKRANSKI SADRŽAJ MOBILNE APLIKACIJE -->
+                <div class="flex-1 bg-slate-950 overflow-y-auto flex flex-col p-4 pt-2">
+                    
+                    <!-- EKRAN: DASHBOARD (POČETNA) -->
+                    <template x-if="activeTab === 'dashboard' && currentScreen === 'main'">
+                        <div class="flex-1 flex flex-col gap-4">
+                            <!-- Profil firme zaglavlje -->
+                            <div class="flex justify-between items-center mt-2">
+                                <div>
+                                    <span class="text-[9px] text-slate-500 block font-medium">Dobrodošao nazad,</span>
+                                    <h3 class="text-sm font-bold text-white">Sloba TermoGlow</h3>
+                                </div>
+                                <div class="p-2 bg-slate-900 rounded-full text-slate-400 relative">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                                    <span class="absolute top-1 right-1 w-1.5 h-1.5 bg-indigo-500 rounded-full"></span>
+                                </div>
+                            </div>
+
+                            <!-- Statistika kartice -->
+                            <div class="grid grid-cols-2 gap-2.5">
+                                <div class="bg-slate-900 border border-slate-800 rounded-xl p-2.5 flex flex-col justify-between">
+                                    <div class="flex justify-between items-center text-slate-500 mb-1">
+                                        <span class="text-[9px] font-medium text-slate-400">Kreirano</span>
+                                        <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                    </div>
+                                    <span class="text-xl font-black text-white" x-text="quotes.length"></span>
+                                    <span class="text-[9px] text-emerald-400 mt-1 flex items-center gap-0.5">
+                                        +15% od prošlog
+                                    </span>
+                                </div>
+
+                                <div class="bg-slate-900 border border-slate-800 rounded-xl p-2.5 flex flex-col justify-between">
+                                    <div class="flex justify-between items-center text-slate-500 mb-1">
+                                        <span class="text-[9px] font-medium text-slate-400">Ukupno poslato</span>
+                                        <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    </div>
+                                    <span class="text-sm font-black text-white" x-text="getSentTotal() + ' RSD'"></span>
+                                    <span class="text-[9px] text-slate-500 mt-1">Aktivne ponude</span>
+                                </div>
+                            </div>
+
+                            <!-- Brza akcija dugme -->
+                            <button @click="startCreateQuote()"
+                                    class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-2.5 px-4 rounded-xl shadow-md flex items-center justify-center gap-1.5 text-xs transition duration-200">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+                                NOVA PONUDA (3 koraka)
+                            </button>
+
+                            <!-- Poslednje aktivnosti log -->
+                            <div class="flex-1 min-h-0 flex flex-col">
+                                <div class="flex justify-between items-center mb-2">
+                                    <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Aktivnosti Uživo</h4>
+                                    <span class="text-[9px] text-indigo-400">Pregledaj sve</span>
+                                </div>
+                                <div class="bg-slate-900 border border-slate-800 rounded-xl p-2.5 overflow-y-auto flex-1 space-y-2 max-h-[220px]">
+                                    <template x-for="notif in notifications" :key="notif.id">
+                                        <div class="flex gap-2 pb-2 border-b border-slate-800/50 last:border-none last:pb-0">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-1.5 flex-shrink-0 animate-pulse"></span>
+                                            <div class="min-w-0">
+                                                <h5 class="text-[10px] font-bold text-white truncate" x-text="notif.title"></h5>
+                                                <p class="text-[9px] text-slate-400 leading-normal" x-text="notif.body"></p>
+                                                <span class="text-[8px] text-slate-500 block mt-0.5" x-text="notif.time"></span>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- EKRAN: KLIJENTI -->
+                    <template x-if="activeTab === 'clients' && currentScreen === 'main'">
+                        <div class="flex-1 flex flex-col gap-3">
+                            <div class="flex justify-between items-center mt-2">
+                                <h3 class="text-sm font-bold text-white">Moji Klijenti</h3>
+                                <button @click="currentScreen = 'add-client'"
+                                        class="p-1.5 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg flex items-center justify-center">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
+                                </button>
+                            </div>
+
+                            <div class="relative">
+                                <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                                </span>
+                                <input type="text" placeholder="Pretraži klijente..." x-model="clientSearch"
+                                       class="w-full bg-slate-900 border border-slate-800 rounded-xl py-1.5 pl-8 pr-3 text-[11px] text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500" />
+                            </div>
+
+                            <div class="flex-1 space-y-2 max-h-[440px] overflow-y-auto pr-1">
+                                <template x-for="client in filteredClients()" :key="client.id">
+                                    <div class="bg-slate-900 border border-slate-800 rounded-xl p-2.5 flex flex-col gap-1 hover:border-slate-700 transition">
+                                        <div class="flex justify-between items-start">
+                                            <div>
+                                                <h4 class="text-[11px] font-bold text-white" x-text="client.name"></h4>
+                                                <span class="text-[9px] text-slate-500 block" x-text="client.company"></span>
+                                            </div>
+                                            <span class="text-[8px] bg-indigo-500/10 text-indigo-400 font-semibold px-2 py-0.5 rounded-full">Klijent</span>
+                                        </div>
+                                        <div class="flex flex-col gap-0.5 text-[9px] text-slate-400 mt-1.5 border-t border-slate-800/50 pt-1.5">
+                                            <span class="flex items-center gap-1">
+                                                <svg class="w-3 h-3 text-slate-500" fill="currentColor" viewBox="0 0 20 20"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/></svg>
+                                                <span x-text="client.phone"></span>
+                                            </span>
+                                            <span class="flex items-center gap-1">
+                                                <svg class="w-3 h-3 text-slate-500" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/></svg>
+                                                <span x-text="client.email"></span>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- EKRAN: CENOVNIK -->
+                    <template x-if="activeTab === 'price' && currentScreen === 'main'">
+                        <div class="flex-1 flex flex-col gap-3">
+                            <div class="flex justify-between items-center mt-2">
+                                <h3 class="text-sm font-bold text-white">Moj Cenovnik</h3>
+                                <button @click="currentScreen = 'add-price'"
+                                        class="p-1.5 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg flex items-center justify-center">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+                                </button>
+                            </div>
+
+                            <div class="relative">
+                                <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                                </span>
+                                <input type="text" placeholder="Pretraži cenovnik..." x-model="priceSearch"
+                                       class="w-full bg-slate-900 border border-slate-800 rounded-xl py-1.5 pl-8 pr-3 text-[11px] text-slate-100 focus:outline-none focus:border-indigo-500" />
+                            </div>
+
+                            <div class="flex gap-1 overflow-x-auto pb-0.5 select-none">
+                                <template x-for="cat in ['Sve', 'Rad', 'Materijal', 'Ostalo']">
+                                    <button @click="priceCategoryFilter = cat"
+                                            :class="priceCategoryFilter === cat ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30' : 'bg-slate-900 text-slate-500 border-slate-800'"
+                                            class="text-[9px] font-bold px-2.5 py-1 rounded-full border shrink-0" x-text="cat"></button>
+                                </template>
+                            </div>
+
+                            <div class="flex-1 space-y-1.5 max-h-[380px] overflow-y-auto pr-1">
+                                <template x-for="item in filteredPriceItems()" :key="item.id">
+                                    <div class="bg-slate-900 border border-slate-800 rounded-xl p-2.5 flex justify-between items-center">
+                                        <div>
+                                            <span :class="item.category === 'Rad' ? 'bg-indigo-500/20 text-indigo-400' : 'bg-emerald-500/20 text-emerald-400'"
+                                                  class="text-[7px] font-bold uppercase px-1 rounded-xs" x-text="item.category"></span>
+                                            <h4 class="text-[10px] font-bold text-white mt-1" x-text="item.name"></h4>
+                                        </div>
+                                        <span class="text-[11px] font-black text-white" x-text="item.price.toLocaleString('sr-RS') + ' RSD'"></span>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- EKRAN: PONUDE -->
+                    <template x-if="activeTab === 'quotes' && currentScreen === 'main'">
+                        <div class="flex-1 flex flex-col gap-3">
+                            <div class="flex justify-between items-center mt-2">
+                                <h3 class="text-sm font-bold text-white">Kreirane Ponude</h3>
+                                <button @click="startCreateQuote()"
+                                        class="p-1.5 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg flex items-center justify-center">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+                                </button>
+                            </div>
+
+                            <div class="flex gap-1 overflow-x-auto pb-0.5">
+                                <template x-for="stat in ['Sve', 'Nacrt', 'Poslata', 'Prihvaćena', 'Odbijena']">
+                                    <button @click="quoteStatusFilter = stat"
+                                            :class="quoteStatusFilter === stat ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30' : 'bg-slate-900 text-slate-500 border-slate-800'"
+                                            class="text-[9px] font-bold px-2.5 py-1 rounded-full border shrink-0" x-text="stat"></button>
+                                </template>
+                            </div>
+
+                            <div class="flex-1 space-y-2 max-h-[420px] overflow-y-auto pr-1">
+                                <template x-for="quote in filteredQuotes()" :key="quote.id">
+                                    <div @click="selectedQuote = quote; currentScreen = 'quote-detail'"
+                                         class="bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-xl p-2.5 flex flex-col gap-1 cursor-pointer transition">
+                                        <div class="flex justify-between items-start">
+                                            <div>
+                                                <span class="text-[9px] text-slate-500 block" x-text="'Ponuda #' + quote.id"></span>
+                                                <h4 class="text-[10px] font-bold text-white" x-text="quote.clientName"></h4>
+                                            </div>
+                                            <span :class="getBadgeClass(quote.status)"
+                                                  class="text-[8px] font-extrabold px-1.5 py-0.5 rounded-full uppercase border"
+                                                  x-text="quote.status"></span>
+                                        </div>
+
+                                        <div class="flex justify-between items-center text-[9px] border-t border-slate-800/80 pt-1.5 mt-1">
+                                            <span class="font-extrabold text-white" x-text="quote.total.toLocaleString('sr-RS') + ' RSD'"></span>
+                                            <template x-if="quote.status === 'poslata'">
+                                                <span :class="quote.trackingOpened ? 'text-emerald-400' : 'text-slate-500'" class="flex items-center gap-1 font-semibold">
+                                                    <span :class="quote.trackingOpened ? 'bg-emerald-500' : 'bg-slate-600'" class="w-1 h-1 rounded-full"></span>
+                                                    <span x-text="quote.trackingOpened ? 'Pročitana' : 'Čeka klijenta'"></span>
+                                                </span>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- EKRAN: FAKTURE -->
+                    <template x-if="activeTab === 'invoices' && currentScreen === 'main'">
+                        <div class="flex-1 flex flex-col gap-3">
+                            <div class="mt-2">
+                                <h3 class="text-sm font-bold text-white">Izdate Fakture</h3>
+                                <p class="text-[9px] text-slate-500">Automatski kreirane iz prihvaćenih ponuda.</p>
+                            </div>
+
+                            <div class="flex-1 space-y-2 pr-1 overflow-y-auto max-h-[460px]">
+                                <template x-for="invoice in invoices" :key="invoice.id">
+                                    <div @click="selectedInvoice = invoice; currentScreen = 'invoice-detail'"
+                                         class="bg-slate-900 border border-slate-800 rounded-xl p-2.5 flex justify-between items-center cursor-pointer hover:border-slate-700 transition">
+                                        <div>
+                                            <span class="text-[8px] text-indigo-400 block font-bold" x-text="invoice.id"></span>
+                                            <h4 class="text-[10px] font-bold text-white" x-text="invoice.clientName"></h4>
+                                            <span class="text-[8px] text-slate-500" x-text="invoice.date"></span>
+                                        </div>
+                                        <div class="text-right">
+                                            <span class="text-[10px] font-black text-white block" x-text="invoice.total.toLocaleString('sr-RS') + ' RSD'"></span>
+                                            <span :class="invoice.status === 'plaćeno' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'"
+                                                  class="text-[7px] font-bold uppercase px-1 py-0.5 rounded-xs inline-block mt-0.5"
+                                                  x-text="invoice.status"></span>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- EKRAN: NOVI KLIJENT FORMULAR -->
+                    <template x-if="currentScreen === 'add-client'">
+                        <div class="flex-1 flex flex-col gap-3">
+                            <div class="flex items-center gap-2 mt-2">
+                                <button @click="currentScreen = 'main'" class="p-1 bg-slate-900 rounded text-slate-400">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                </button>
+                                <h3 class="text-xs font-bold text-white">Novi Klijent</h3>
+                            </div>
+
+                            <form @submit.prevent="handleAddClient()" class="space-y-2 text-left">
+                                <div>
+                                    <label class="text-[9px] text-slate-500 block mb-0.5">Ime i Prezime *</label>
+                                    <input type="text" required x-model="newClient.name" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-1.5 text-xs text-white focus:border-indigo-500 focus:outline-none" />
+                                </div>
+                                <div>
+                                    <label class="text-[9px] text-slate-500 block mb-0.5">Firma</label>
+                                    <input type="text" x-model="newClient.company" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-1.5 text-xs text-white focus:border-indigo-500 focus:outline-none" />
+                                </div>
+                                <div>
+                                    <label class="text-[9px] text-slate-500 block mb-0.5">Telefon *</label>
+                                    <input type="text" required x-model="newClient.phone" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-1.5 text-xs text-white focus:border-indigo-500 focus:outline-none" />
+                                </div>
+                                <div>
+                                    <label class="text-[9px] text-slate-500 block mb-0.5">E-mail</label>
+                                    <input type="email" x-model="newClient.email" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-1.5 text-xs text-white focus:border-indigo-500 focus:outline-none" />
+                                </div>
+                                <button type="submit" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 rounded-lg text-xs mt-3 transition">Sačuvaj</button>
+                            </form>
+                        </div>
+                    </template>
+
+                    <!-- EKRAN: DODAJ STAVKU U CENOVNIK FORMULAR -->
+                    <template x-if="currentScreen === 'add-price'">
+                        <div class="flex-1 flex flex-col gap-3">
+                            <div class="flex items-center gap-2 mt-2">
+                                <button @click="currentScreen = 'main'" class="p-1 bg-slate-900 rounded text-slate-400">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                </button>
+                                <h3 class="text-xs font-bold text-white">Nova stavka</h3>
+                            </div>
+
+                            <form @submit.prevent="handleAddPriceItem()" class="space-y-2 text-left">
+                                <div>
+                                    <label class="text-[9px] text-slate-500 block mb-0.5">Naziv Usluge/Materijala *</label>
+                                    <input type="text" required x-model="newPriceItem.name" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-1.5 text-xs text-white focus:border-indigo-500 focus:outline-none" />
+                                </div>
+                                <div>
+                                    <label class="text-[9px] text-slate-500 block mb-0.5">Kategorija</label>
+                                    <select x-model="newPriceItem.category" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-1.5 text-xs text-white focus:border-indigo-500 focus:outline-none">
+                                        <option value="Rad">Rad / Ruke</option>
+                                        <option value="Materijal">Materijal</option>
+                                        <option value="Ostalo">Ostalo</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="text-[9px] text-slate-500 block mb-0.5">Cena (RSD) *</label>
+                                    <input type="number" required x-model="newPriceItem.price" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-1.5 text-xs text-white focus:border-indigo-500 focus:outline-none" />
+                                </div>
+                                <button type="submit" class="w-full bg-indigo-500 text-white font-bold py-2 rounded-lg text-xs mt-3 transition">Sačuvaj</button>
+                            </form>
+                        </div>
+                    </template>
+
+                    <!-- EKRAN: WIZARD ZA NOVU PONUDU -->
+                    <template x-if="currentScreen === 'create-quote'">
+                        <div class="flex-1 flex flex-col gap-3">
+                            <div class="flex justify-between items-center mt-2">
+                                <span class="text-[10px] font-bold text-indigo-400" x-text="'Korak ' + wizardStep + '/3'"></span>
+                                <button @click="currentScreen = 'main'" class="p-1 bg-slate-900 rounded text-slate-400">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                </button>
+                            </div>
+
+                            <!-- Wizard korak 1: Izaberi klijenta -->
+                            <template x-if="wizardStep === 1">
+                                <div class="flex-1 flex flex-col gap-2">
+                                    <h4 class="text-[11px] font-bold text-slate-300">Izaberi klijenta za ponudu:</h4>
+                                    <div class="flex-1 space-y-1 overflow-y-auto max-h-[340px]">
+                                        <template x-for="client in clients" :key="client.id">
+                                            <div @click="wizardSelectedClient = client"
+                                                 :class="wizardSelectedClient?.id === client.id ? 'border-indigo-500 bg-indigo-500/10' : 'border-slate-800 bg-slate-900'"
+                                                 class="p-2 border rounded-xl flex justify-between items-center cursor-pointer transition">
+                                                <div class="min-w-0 text-left">
+                                                    <h5 class="text-[10px] font-bold text-white truncate" x-text="client.name"></h5>
+                                                    <span class="text-[8px] text-slate-500 truncate block" x-text="client.company"></span>
+                                                </div>
+                                                <template x-if="wizardSelectedClient?.id === client.id">
+                                                    <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                                </template>
+                                            </div>
+                                        </template>
+                                    </div>
+                                    <button :disabled="!wizardSelectedClient" @click="wizardStep = 2"
+                                            class="w-full bg-indigo-500 hover:bg-indigo-600 disabled:bg-slate-800 disabled:text-slate-500 text-white font-bold py-2 rounded-lg text-xs mt-2 flex items-center justify-center gap-1 transition">
+                                        Sledeće (Stavke)
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                                    </button>
+                                </div>
+                            </template>
+
+                            <!-- Wizard korak 2: Dodaj stavke -->
+                            <template x-if="wizardStep === 2">
+                                <div class="flex-1 flex flex-col gap-2">
+                                    <h4 class="text-[11px] font-bold text-slate-300">Izaberi stavke sa cenama:</h4>
+                                    <div class="flex-1 overflow-y-auto max-h-[280px] space-y-1.5 pr-1">
+                                        <template x-for="item in priceItems" :key="item.id">
+                                            <div class="bg-slate-900 border border-slate-800 rounded-xl p-2 flex flex-col gap-1.5">
+                                                <div class="flex justify-between items-center">
+                                                    <div class="min-w-0 text-left">
+                                                        <h5 class="text-[10px] font-bold text-white truncate" x-text="item.name"></h5>
+                                                        <span class="text-[8px] text-slate-500" x-text="item.price + ' RSD'"></span>
+                                                    </div>
+                                                    <button @click="toggleWizardItem(item)"
+                                                            :class="isItemInWizard(item) ? 'bg-indigo-500 text-white' : 'bg-slate-800 text-slate-500'"
+                                                            class="p-1 rounded transition">
+                                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                                                    </button>
+                                                </div>
+                                                <template x-if="isItemInWizard(item)">
+                                                    <div class="flex justify-between items-center border-t border-slate-800 pt-1 mt-0.5">
+                                                        <span class="text-[8px] text-indigo-400 font-medium">Količina:</span>
+                                                        <div class="flex items-center gap-1.5">
+                                                            <button @click="updateWizardItemQty(item.id, -1)" class="px-1.5 bg-slate-800 text-white rounded text-[10px] font-bold">-</button>
+                                                            <span class="text-[10px] text-white font-bold" x-text="getWizardItemQty(item.id)"></span>
+                                                            <button @click="updateWizardItemQty(item.id, 1)" class="px-1.5 bg-slate-800 text-white rounded text-[10px] font-bold">+</button>
+                                                        </div>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </template>
+                                    </div>
+
+                                    <div class="bg-slate-900 p-2 border border-slate-800 rounded-xl flex justify-between items-center text-[10px]">
+                                        <span class="text-slate-400">Trenutno ukupno:</span>
+                                        <span class="font-bold text-white" x-text="getWizardTotal() + ' RSD'"></span>
+                                    </div>
+
+                                    <div class="flex gap-2">
+                                        <button @click="wizardStep = 1" class="flex-1 bg-slate-900 border border-slate-800 py-2 rounded-lg text-xs text-slate-300">Nazad</button>
+                                        <button :disabled="wizardItems.length === 0" @click="wizardStep = 3" class="flex-1 bg-indigo-500 py-2 rounded-lg text-xs font-bold disabled:bg-slate-800 disabled:text-slate-500 transition">Završi</button>
+                                    </div>
+                                </div>
+                            </template>
+
+                            <!-- Wizard korak 3: Pregled i popust -->
+                            <template x-if="wizardStep === 3">
+                                <div class="flex-1 flex flex-col gap-3 text-left">
+                                    <h4 class="text-[11px] font-bold text-slate-300">Podesi popust i snimi:</h4>
+                                    
+                                    <div class="bg-slate-900 border border-slate-800 rounded-xl p-2.5">
+                                        <label class="text-[9px] text-slate-500 block mb-1">Popust u %</label>
+                                        <div class="flex items-center gap-2">
+                                            <input type="number" min="0" max="100" x-model="wizardDiscount" class="bg-slate-950 border border-slate-800 rounded p-1 text-xs text-white w-20" />
+                                            <span class="text-xs text-slate-400">% popusta</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="bg-slate-900 border border-slate-800 rounded-xl p-2.5 flex-1 flex flex-col justify-between max-h-[160px]">
+                                        <span class="text-[8px] text-indigo-400 font-bold block uppercase">Pregled stavki</span>
+                                        <div class="text-[9px] space-y-1 mt-1 overflow-y-auto">
+                                            <div class="flex justify-between"><span class="text-slate-500">Klijent:</span> <span class="font-semibold text-white" x-text="wizardSelectedClient?.name"></span></div>
+                                            <div class="flex justify-between"><span class="text-slate-500">Ukupno stavki:</span> <span class="font-semibold text-white" x-text="wizardItems.length"></span></div>
+                                            <div class="flex justify-between"><span class="text-slate-500">Popust:</span> <span class="font-semibold text-white" x-text="wizardDiscount + '%'"></span></div>
+                                        </div>
+                                        <div class="border-t border-slate-800 pt-1.5 flex justify-between text-[11px] font-extrabold text-white">
+                                            <span>Ukupna cena:</span>
+                                            <span x-text="getWizardFinalTotal() + ' RSD'"></span>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex gap-2">
+                                        <button @click="wizardStep = 2" class="flex-1 bg-slate-900 border border-slate-800 py-2 rounded-lg text-xs text-slate-300">Nazad</button>
+                                        <button @click="finalizeQuote('poslata')" class="flex-1 bg-indigo-500 text-white font-bold py-2 rounded-lg text-xs flex items-center justify-center gap-1">Spremi i pošalji</button>
+                                    </div>
+                                </div>
+                            </template>
+
+                        </div>
+                    </template>
+
+                    <!-- EKRAN: DETALJI PONUDE -->
+                    <template x-if="currentScreen === 'quote-detail' && selectedQuote">
+                        <div class="flex-1 flex flex-col gap-3 text-left">
+                            <div class="flex items-center gap-2 mt-2">
+                                <button @click="currentScreen = 'main'" class="p-1 bg-slate-900 rounded text-slate-400">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                </button>
+                                <h3 class="text-xs font-bold text-white" x-text="'Ponuda #' + selectedQuote.id"></h3>
+                            </div>
+
+                            <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-2">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <span class="text-[8px] text-slate-500 block uppercase">KLIJENT</span>
+                                        <h4 class="text-[10px] font-bold text-white" x-text="selectedQuote.clientName"></h4>
+                                        <span class="text-[8px] text-slate-400" x-text="selectedQuote.date"></span>
+                                    </div>
+                                    <span :class="getBadgeClass(selectedQuote.status)"
+                                          class="text-[8px] font-extrabold px-1.5 py-0.5 rounded-full"
+                                          x-text="selectedQuote.status"></span>
+                                </div>
+
+                                <div class="border-t border-b border-slate-800/80 py-2 space-y-1">
+                                    <template x-for="it in selectedQuote.items">
+                                        <div class="flex justify-between text-[9px] text-slate-300">
+                                            <span x-text="it.name + ' (x' + it.qty + ')'"></span>
+                                            <span class="font-bold" x-text="(it.price * it.qty).toLocaleString('sr-RS') + ' RSD'"></span>
+                                        </div>
+                                    </template>
+                                </div>
+
+                                <div class="flex justify-between text-[11px] font-extrabold text-white">
+                                    <span>UKUPNO:</span>
+                                    <span x-text="selectedQuote.total.toLocaleString('sr-RS') + ' RSD'"></span>
+                                </div>
+
+                                <template x-if="selectedQuote.status === 'poslata'">
+                                    <div class="bg-slate-950 border border-slate-800 p-2 rounded-xl text-[9px] space-y-1">
+                                        <span class="font-bold text-indigo-400 block flex items-center gap-1">
+                                            Real-time Tracking
+                                        </span>
+                                        <p class="text-slate-400 leading-normal" x-text="selectedQuote.trackingOpened ? 'Klijent je pročitao ponudu (' + selectedQuote.trackingTime + ').' : 'Klijent još uvek nije otvorio poslati link.'"></p>
+                                    </div>
+                                </template>
+                            </div>
+
+                            <div class="space-y-1.5 mt-auto">
+                                <template x-if="selectedQuote.status === 'prihvaćena'">
+                                    <button @click="convertQuoteToInvoice(selectedQuote)"
+                                            class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded-lg text-xs flex items-center justify-center gap-1 transition">
+                                        Konvertuj u Fakturu
+                                    </button>
+                                </template>
+                                
+                                <template x-if="selectedQuote.status === 'poslata'">
+                                    <div class="flex gap-2">
+                                        <button @click="setClientPortalQuote(selectedQuote.id)"
+                                                class="flex-1 bg-indigo-500 text-white font-bold py-2 rounded-lg text-xs flex items-center justify-center gap-1 transition">
+                                            Vidi Portal
+                                        </button>
+                                        <template x-if="selectedQuote.trackingOpened">
+                                            <button @click="handleClientDecision(selectedQuote.id, true)"
+                                                    class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded-lg text-xs transition">
+                                                Prihvati
+                                            </button>
+                                        </template>
+                                    </div>
+                                </template>
+
+                                <button @click="triggerToast('📄 PDF sačuvan', 'PDF dokument za ponudu je generisan.')"
+                                        class="w-full bg-slate-900 text-slate-300 font-bold py-1.5 rounded-lg text-xs border border-slate-800 hover:bg-slate-850 transition">
+                                    Preuzmi PDF ponudu
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- EKRAN: DETALJI FAKTURE -->
+                    <template x-if="currentScreen === 'invoice-detail' && selectedInvoice">
+                        <div class="flex-1 flex flex-col gap-3 text-left">
+                            <div class="flex items-center gap-2 mt-2">
+                                <button @click="currentScreen = 'main'" class="p-1 bg-slate-900 rounded text-slate-400">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                </button>
+                                <h3 class="text-xs font-bold text-white" x-text="'Faktura ' + selectedInvoice.id"></h3>
+                            </div>
+
+                            <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-3">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <span class="text-[8px] text-slate-500 block uppercase">Klijent</span>
+                                        <h4 class="text-[10px] font-bold text-white" x-text="selectedInvoice.clientName"></h4>
+                                        <span class="text-[8px] text-slate-400 block" x-text="'Kreirano: ' + selectedInvoice.date"></span>
+                                    </div>
+                                    <span :class="selectedInvoice.status === 'plaćeno' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'"
+                                          class="text-[8px] font-extrabold px-1.5 py-0.5 rounded-full"
+                                          x-text="selectedInvoice.status"></span>
+                                </div>
+
+                                <div class="border-t border-slate-800/85 pt-2 flex justify-between text-[11px] font-extrabold text-white">
+                                    <span>UKUPNO ZA NAPLATU:</span>
+                                    <span x-text="selectedInvoice.total.toLocaleString('sr-RS') + ' RSD'"></span>
+                                </div>
+                            </div>
+
+                            <template x-if="selectedInvoice.status === 'neplaćeno'">
+                                <button @click="markInvoiceAsPaid(selectedInvoice.id)"
+                                        class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded-lg text-xs mt-auto flex items-center justify-center gap-1.5 transition">
+                                    Označi kao PLAĆENO
+                                </button>
+                            </template>
+                        </div>
+                    </template>
+
+                </div>
+
+                <!-- NAVIGACIONI BAR TELEFONA (Vidljiv samo na glavnom ekranu) -->
+                <template x-if="currentScreen === 'main'">
+                    <div class="bg-slate-900 border-t border-slate-800/85 px-1 py-2 flex justify-around items-center z-40 select-none">
+                        <button @click="activeTab = 'dashboard'; currentScreen = 'main'"
+                                :class="activeTab === 'dashboard' ? 'text-indigo-400 font-bold' : 'text-slate-500 hover:text-slate-300'"
+                                class="flex flex-col items-center gap-0.5">
+                            <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                            <span class="text-[7px]">Početna</span>
+                        </button>
+
+                        <button @click="activeTab = 'clients'; currentScreen = 'main'"
+                                :class="activeTab === 'clients' ? 'text-indigo-400 font-bold' : 'text-slate-500 hover:text-slate-300'"
+                                class="flex flex-col items-center gap-0.5">
+                            <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                            <span class="text-[7px]">Klijenti</span>
+                        </button>
+
+                        <button @click="activeTab = 'price'; currentScreen = 'main'"
+                                :class="activeTab === 'price' ? 'text-indigo-400 font-bold' : 'text-slate-500 hover:text-slate-300'"
+                                class="flex flex-col items-center gap-0.5">
+                            <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                            <span class="text-[7px]">Cenovnik</span>
+                        </button>
+
+                        <button @click="activeTab = 'quotes'; currentScreen = 'main'"
+                                :class="activeTab === 'quotes' ? 'text-indigo-400 font-bold' : 'text-slate-500 hover:text-slate-300'"
+                                class="flex flex-col items-center gap-0.5">
+                            <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            <span class="text-[7px]">Ponude</span>
+                        </button>
+
+                        <button @click="activeTab = 'invoices'; currentScreen = 'main'"
+                                :class="activeTab === 'invoices' ? 'text-indigo-400 font-bold' : 'text-slate-500 hover:text-slate-300'"
+                                class="flex flex-col items-center gap-0.5">
+                            <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+                            <span class="text-[7px]">Fakture</span>
+                        </button>
+                    </div>
+                </template>
+
+                <!-- Dno telefona (Home indikator) -->
+                <div class="bg-slate-900 pb-1.5 flex justify-center z-40">
+                    <span class="w-20 h-0.5 bg-slate-700 rounded-full"></span>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- KOLONA 2: DESNI PANEL (KLIJENTSKI PORTAL + LIVE SUPABASE PREGLED) -->
+        <div class="lg:col-span-7 flex flex-col gap-4">
+            
+            <!-- Tabovi za promenu desnog ekrana -->
+            <div class="flex bg-slate-900 border border-slate-800 p-1.5 rounded-2xl gap-2 w-max select-none">
+                <button @click="rightPanelTab = 'simulator'"
+                        :class="rightPanelTab === 'simulator' ? 'bg-indigo-500 text-white' : 'text-slate-400 hover:text-white'"
+                        class="flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                    1. Klijentov Portal (Live Tracking)
+                </button>
+                <button @click="rightPanelTab = 'database'"
+                        :class="rightPanelTab === 'database' ? 'bg-indigo-500 text-white' : 'text-slate-400 hover:text-white'"
+                        class="flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/></svg>
+                    2. Supabase Baza (Live)
+                </button>
+            </div>
+
+            <!-- SADRŽAJ DESNOG PANELA -->
+            <div class="bg-slate-900 border border-slate-800 rounded-3xl p-5 md:p-6 shadow-xl flex-1 min-h-[610px] flex flex-col justify-between">
+                
+                <!-- TAB 1: PORTAL KOJI KLIJENT VIDI -->
+                <template x-if="rightPanelTab === 'simulator'">
+                    <div class="flex-1 flex flex-col justify-between h-full">
+                        <div>
+                            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 pb-4 border-b border-slate-800 gap-3">
+                                <div>
+                                    <span class="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 rounded-full text-[10px] font-bold border border-emerald-500/20 mr-2">
+                                        Simulacija Klijentskog Portala
+                                    </span>
+                                    <h3 class="text-base font-bold text-white mt-1">Ekran koji vidi klijent na svom telefonu</h3>
+                                </div>
+                                
+                                <div class="flex items-center gap-1.5 text-xs text-slate-400 bg-slate-950 p-2 rounded-xl border border-slate-800">
+                                    <span class="font-semibold text-slate-300">Izaberi ponudu:</span>
+                                    <select x-model="clientPortalQuoteId" class="bg-slate-900 border border-slate-800 text-white text-xs rounded p-1 focus:outline-none">
+                                        <template x-for="q in quotes">
+                                            <option :value="q.id" x-text="'Ponuda #' + q.id + ' (' + q.clientName + ')'"></option>
+                                        </template>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Ako je ponuda izabrana -->
+                            <template x-if="getCurrentPortalQuote()">
+                                <div class="space-y-4">
+                                    <div class="bg-slate-950 p-3 rounded-2xl border border-slate-800 text-xs text-left">
+                                        <span class="text-slate-400 block font-semibold">Jedinstveni link poslat klijentu (SMS/Viber):</span>
+                                        <div class="flex items-center justify-between mt-1 text-indigo-400 font-mono text-[10px] truncate bg-slate-900/60 p-2 rounded-lg border border-indigo-500/10">
+                                            <span x-text="'https://ponude.termoglow.rs/track/' + getCurrentPortalQuote().id"></span>
+                                            <span class="text-[8px] bg-indigo-500/20 text-indigo-400 px-1.5 py-0.5 rounded font-sans">Uživo</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Mobilni izgled klijentskog portala -->
+                                    <div class="bg-slate-950 rounded-3xl p-4 md:p-6 border border-slate-800 shadow-inner max-w-md mx-auto relative text-left">
+                                        
+                                        <!-- Logo i informacije o firmi -->
+                                        <div class="flex justify-between items-start border-b border-slate-800 pb-3 mb-4">
+                                            <div>
+                                                <h4 class="text-xs font-bold text-white flex items-center gap-1">
+                                                    TermoGlow Grejanje & Vodovod
+                                                </h4>
+                                                <span class="text-[8px] text-slate-500 block">PIB: 123456789 | Tel: 064/123-4567</span>
+                                            </div>
+                                            <span class="text-[10px] font-bold text-indigo-400 font-mono" x-text="'PONUDA #' + getCurrentPortalQuote().id"></span>
+                                        </div>
+
+                                        <!-- Detalji klijenta -->
+                                        <div class="text-xs mb-4">
+                                            <span class="text-slate-500 block text-[9px]">Za klijenta:</span>
+                                            <span class="font-bold text-white block" x-text="getCurrentPortalQuote().clientName"></span>
+                                            <span class="text-slate-400 text-[9px] block" x-text="'Datum kreiranja: ' + getCurrentPortalQuote().date"></span>
+                                        </div>
+
+                                        <!-- Tabela stavki u ponudi -->
+                                        <div class="space-y-2 bg-slate-900/40 p-3 rounded-xl border border-slate-800/80 mb-4">
+                                            <div class="flex justify-between border-b border-slate-800 pb-1 text-[9px] font-bold text-slate-500 uppercase">
+                                                <span>Stavka</span>
+                                                <span>Iznos</span>
+                                            </div>
+                                            <template x-for="it in getCurrentPortalQuote().items">
+                                                <div class="flex justify-between text-xs text-slate-300">
+                                                    <span><span x-text="it.name"></span> <span class="text-[9px] text-slate-500" x-text="'x' + it.qty"></span></span>
+                                                    <span class="font-bold" x-text="(it.price * it.qty).toLocaleString('sr-RS') + ' RSD'"></span>
+                                                </div>
+                                            </template>
+                                            <template x-if="getCurrentPortalQuote().discount > 0">
+                                                <div class="flex justify-between text-xs text-rose-400 border-t border-slate-800/50 pt-1.5 mt-1">
+                                                    <span x-text="'Popust (' + getCurrentPortalQuote().discount + '%)'"></span>
+                                                    <span x-text="'-' + getDiscountAmount(getCurrentPortalQuote()).toLocaleString('sr-RS') + ' RSD'"></span>
+                                                </div>
+                                            </template>
+                                            <div class="flex justify-between text-sm font-black text-white border-t border-slate-800 pt-2 mt-1">
+                                                <span>UKUPNA CENA:</span>
+                                                <span class="text-indigo-400" x-text="getCurrentPortalQuote().total.toLocaleString('sr-RS') + ' RSD'"></span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Akcije za klijenta -->
+                                        <div class="space-y-2.5">
+                                            <template x-if="getCurrentPortalQuote().status === 'poslata'">
+                                                <div class="flex gap-2">
+                                                    <button @click="handleClientDecision(getCurrentPortalQuote().id, false)"
+                                                            class="flex-1 bg-slate-900 hover:bg-slate-850 border border-slate-800 text-rose-400 font-bold py-2 rounded-xl text-xs transition">
+                                                        Odbij Ponudu
+                                                    </button>
+                                                    <button @click="handleClientDecision(getCurrentPortalQuote().id, true)"
+                                                            class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded-xl text-xs transition shadow-lg shadow-emerald-600/20">
+                                                        Prihvati i Potpiši
+                                                    </button>
+                                                </div>
+                                            </template>
+
+                                            <template x-if="getCurrentPortalQuote().status === 'prihvaćena'">
+                                                <div class="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl p-3 text-center text-xs font-bold flex items-center justify-center gap-2">
+                                                    Ponuda je prihvaćena! Zanatlija je počeo sa radom.
+                                                </div>
+                                            </template>
+
+                                            <template x-if="getCurrentPortalQuote().status === 'odbijena'">
+                                                <div class="bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl p-3 text-center text-xs font-bold">
+                                                    Ova ponuda je odbijena.
+                                                </div>
+                                            </template>
+                                        </div>
+
+                                        <!-- SIMULATION OVERLAY (Za pre-tracking stanje) -->
+                                        <template x-if="!getCurrentPortalQuote().trackingOpened">
+                                            <div class="absolute inset-0 bg-slate-950/95 rounded-3xl flex flex-col items-center justify-center p-6 text-center backdrop-blur-sm z-30">
+                                                <svg class="w-10 h-10 text-indigo-400 animate-pulse mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                                                <h5 class="text-sm font-bold text-white mb-1.5">Klijent još nije otvorio link</h5>
+                                                <p class="text-xs text-slate-400 mb-4 max-w-xs">
+                                                    Kliknite ispod da simulirate trenutak kada klijent klikne na link na svom telefonu.
+                                                </p>
+                                                <button @click="simulateClientOpeningLink(getCurrentPortalQuote().id)"
+                                                        class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-5 rounded-xl text-xs flex items-center gap-2 transition">
+                                                    Simuliraj Otvaranje Linka
+                                                </button>
+                                            </div>
+                                        </template>
+
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+
+                        <!-- Objašnjenje -->
+                        <div class="bg-slate-950 rounded-2xl p-4 border border-slate-800 mt-6 text-xs text-slate-400 flex items-start gap-2.5 text-left">
+                            <span class="text-indigo-400 mt-0.5">💡</span>
+                            <div>
+                                <span class="font-bold text-white block">Kako radi real-time tracking?</span>
+                                Onog trenutka kada klijent otvori ovaj link, server odmah registruje pristup i preko WebSocket-a (ili Expo Push API) istog sekunda šalje instant obaveštenje na telefon zanatlije. Nema više nagađanja da li je ponuda viđena.
+                            </div>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- TAB 2: TRENUTNI SUPABASE PODACI (UŽIVO) -->
+                <template x-if="rightPanelTab === 'database'">
+                    <div class="flex-1 flex flex-col justify-between h-full">
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center pb-4 border-b border-slate-800">
+                                <div class="text-left">
+                                    <h3 class="text-base font-bold text-white">Pregled baze podataka (Supabase)</h3>
+                                    <p class="text-xs text-slate-500 mt-0.5">Svi podaci se dinamički menjaju kako radite na telefonu.</p>
+                                </div>
+                                <button @click="resetDatabase()"
+                                        class="flex items-center gap-1.5 px-3 py-1.5 bg-slate-950 hover:bg-slate-850 border border-slate-800 text-slate-400 rounded-xl text-xs transition">
+                                    Resetuj Bazu
+                                </button>
+                            </div>
+
+                            <!-- Tabela Klijenti -->
+                            <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 text-left">
+                                <h4 class="text-xs font-bold text-indigo-400 mb-2 flex items-center gap-2">
+                                    Tabela: <span class="font-mono text-white">clients</span>
+                                </h4>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-[10px] text-left">
+                                        <thead>
+                                            <tr class="border-b border-slate-800 text-slate-500 font-bold uppercase">
+                                                <th class="pb-1.5">ID</th>
+                                                <th class="pb-1.5">Ime i prezime</th>
+                                                <th class="pb-1.5">Firma</th>
+                                                <th class="pb-1.5">Grad/Telefon</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <template x-for="c in clients" :key="c.id">
+                                                <tr class="border-b border-slate-900 last:border-none text-slate-300">
+                                                    <td class="py-1.5 font-mono" x-text="c.id"></td>
+                                                    <td class="py-1.5 font-bold text-white" x-text="c.name"></td>
+                                                    <td class="py-1.5" x-text="c.company || '/'"></td>
+                                                    <td class="py-1.5" x-text="c.phone"></td>
+                                                </tr>
+                                            </template>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Tabela Ponude -->
+                            <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 text-left">
+                                <h4 class="text-xs font-bold text-indigo-400 mb-2 flex items-center gap-2">
+                                    Tabela: <span class="font-mono text-white">quotes</span>
+                                </h4>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-[10px] text-left">
+                                        <thead>
+                                            <tr class="border-b border-slate-800 text-slate-500 font-bold uppercase">
+                                                <th class="pb-1.5">ID</th>
+                                                <th class="pb-1.5">Klijent</th>
+                                                <th class="pb-1.5">Ukupno</th>
+                                                <th class="pb-1.5">Status</th>
+                                                <th class="pb-1.5">Pročitano?</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <template x-for="q in quotes" :key="q.id">
+                                                <tr class="border-b border-slate-900 last:border-none text-slate-300">
+                                                    <td class="py-1.5 font-mono" x-text="'#' + q.id"></td>
+                                                    <td class="py-1.5 font-bold text-white" x-text="q.clientName"></td>
+                                                    <td class="py-1.5 font-mono" x-text="q.total.toLocaleString() + ' RSD'"></td>
+                                                    <td class="py-1.5">
+                                                        <span :class="getBadgeClass(q.status)" class="px-1.5 py-0.5 rounded text-[8px] font-bold uppercase" x-text="q.status"></span>
+                                                    </td>
+                                                    <td class="py-1.5 font-bold" :class="q.trackingOpened ? 'text-emerald-400' : 'text-rose-400'" x-text="q.trackingOpened ? 'DA' : 'NE'"></td>
+                                                </tr>
+                                            </template>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <div class="bg-indigo-950/20 p-3 rounded-2xl border border-indigo-500/10 text-[10px] text-slate-400 text-left">
+                            <span class="font-bold text-indigo-300 block mb-1">Povezivanje sa Supabase:</span>
+                            Kada povežete pravu mobilnu aplikaciju, ovi podaci se sinhronizuju u PostgreSQL bazi u realnom vremenu i dostupni su vam odmah sa bilo kog uređaja.
+                        </div>
+                    </div>
+                </template>
+
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="border-t border-slate-900 bg-slate-950 py-4 text-center text-slate-500 text-[11px]">
+        © 2026 Sloba TermoGlow — Pametni Prototip Aplikacije. Sva prava zadržana.
+    </footer>
+
+    <script>
+        function appState() {
+            return {
+                // UI State
+                activeTab: 'dashboard',
+                currentScreen: 'main',
+                rightPanelTab: 'simulator',
+                audioFeedback: false,
+                activeNotification: null,
+                
+                // Search & Filter state
+                clientSearch: '',
+                priceSearch: '',
+                priceCategoryFilter: 'Sve',
+                quoteStatusFilter: 'Sve',
+                
+                // Portals selection
+                clientPortalQuoteId: '1043',
+
+                // Simulated Baza Podataka
+                clients: [
+                    { id: 1, name: 'Marko Marković', company: 'Marković Gradnja d.o.o.', email: 'marko@markovic.rs', phone: '064/123-4567', city: 'Beograd' },
+                    { id: 2, name: 'Jelena Jovanović', company: 'Frizerski Salon "Jeca"', email: 'jeca.salon@gmail.com', phone: '065/987-6543', city: 'Novi Sad' },
+                    { id: 3, name: 'Dragan Nikolić', company: 'Samostalni preduzetnik', email: 'dragan.nikolic@yahoo.com', phone: '061/555-4433', city: 'Niš' }
+                ],
+                priceItems: [
+                    { id: 1, name: 'Zamena ventila na bojleru', category: 'Rad', price: 3500 },
+                    { id: 2, name: 'Montaža ugradnog vodokotlića', category: 'Rad', price: 6000 },
+                    { id: 3, name: 'Kabl 3x2.5mm (po metru)', category: 'Materijal', price: 180 },
+                    { id: 4, name: 'Automatski osigurač 16A', category: 'Materijal', price: 450 },
+                    { id: 5, name: 'Hitna intervencija (noćna/vikend)', category: 'Ostalo', price: 5000 },
+                    { id: 6, name: 'Montaža i povezivanje lustera', category: 'Rad', price: 2500 }
+                ],
+                quotes: [
+                    { id: '1042', clientId: 1, clientName: 'Marko Marković', items: [{ name: 'Montaža ugradnog vodokotlića', price: 6000, qty: 2 }], discount: 10, total: 10800, status: 'prihvaćena', date: '2026-06-12', trackingOpened: true, trackingTime: '12.06. u 14:32' },
+                    { id: '1043', clientId: 2, clientName: 'Jelena Jovanović', items: [{ name: 'Zamena ventila na bojleru', price: 3500, qty: 1 }, { name: 'Hitna intervencija (noćna/vikend)', price: 5000, qty: 1 }], discount: 0, total: 8500, status: 'poslata', date: '2026-06-14', trackingOpened: false, trackingTime: null }
+                ],
+                invoices: [
+                    { id: 'F-2026-001', quoteId: '1042', clientName: 'Marko Marković', total: 10800, status: 'plaćeno', date: '2026-06-13' }
+                ],
+                notifications: [
+                    { id: 1, title: 'Sistem spreman!', body: 'Svi servisi su uspešno sinhronizovani.', time: 'Pre par sekundi' }
+                ],
+
+                // Formular data
+                newClient: { name: '', company: '', phone: '', email: '' },
+                newPriceItem: { name: '', category: 'Rad', price: '' },
+
+                // Wizard state
+                wizardStep: 1,
+                wizardSelectedClient: null,
+                wizardItems: [],
+                wizardDiscount: 0,
+
+                // Active selections
+                selectedQuote: null,
+                selectedInvoice: null,
+
+                // Helper: Play Notification Sound (D5 -> A5 chime)
+                playNotificationChime() {
+                    try {
+                        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                        const osc1 = ctx.createOscillator();
+                        const gain1 = ctx.createGain();
+                        osc1.connect(gain1);
+                        gain1.connect(ctx.destination);
+                        osc1.type = 'sine';
+                        osc1.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+                        gain1.gain.setValueAtTime(0.08, ctx.currentTime);
+                        gain1.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+                        osc1.start();
+                        osc1.stop(ctx.currentTime + 0.15);
+                        
+                        setTimeout(() => {
+                            const osc2 = ctx.createOscillator();
+                            const gain2 = ctx.createGain();
+                            osc2.connect(gain2);
+                            gain2.connect(ctx.destination);
+                            osc2.type = 'sine';
+                            osc2.frequency.setValueAtTime(880, ctx.currentTime); // A5
+                            gain2.gain.setValueAtTime(0.08, ctx.currentTime);
+                            gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+                            osc2.start();
+                            osc2.stop(ctx.currentTime + 0.25);
+                        }, 80);
+                    } catch (e) {
+                        console.log("Audio API blocked or not supported", e);
+                    }
+                },
+
+                // Push notifications
+                triggerNotification(title, body) {
+                    this.playNotificationChime();
+                    this.audioFeedback = true;
+                    setTimeout(() => this.audioFeedback = false, 800);
+
+                    const newNotif = { id: Date.now(), title, body, time: 'Pre par sekundi' };
+                    this.notifications = [newNotif, ...this.notifications];
+                    this.activeNotification = newNotif;
+
+                    setTimeout(() => {
+                        this.activeNotification = null;
+                    }, 5000);
+                },
+
+                triggerToast(title, body) {
+                    this.triggerNotification(title, body);
+                },
+
+                // Filters
+                filteredClients() {
+                    return this.clients.filter(c => 
+                        c.name.toLowerCase().includes(this.clientSearch.toLowerCase()) ||
+                        c.company.toLowerCase().includes(this.clientSearch.toLowerCase())
+                    );
+                },
+
+                filteredPriceItems() {
+                    return this.priceItems.filter(item => {
+                        const matchesSearch = item.name.toLowerCase().includes(this.priceSearch.toLowerCase());
+                        const matchesCategory = this.priceCategoryFilter === 'Sve' || item.category === this.priceCategoryFilter;
+                        return matchesSearch && matchesCategory;
+                    });
+                },
+
+                filteredQuotes() {
+                    return this.quotes.filter(q => {
+                        return this.quoteStatusFilter === 'Sve' || q.status === this.quoteStatusFilter.toLowerCase();
+                    });
+                },
+
+                // Sent Total
+                getSentTotal() {
+                    return this.quotes
+                        .filter(q => q.status === 'poslata' || q.status === 'prihvaćena')
+                        .reduce((sum, q) => sum + q.total, 0)
+                        .toLocaleString('sr-RS');
+                },
+
+                // Add Actions
+                handleAddClient() {
+                    const client = {
+                        id: this.clients.length + 1,
+                        name: this.newClient.name,
+                        company: this.newClient.company || 'Fizičko lice',
+                        phone: this.newClient.phone,
+                        email: this.newClient.email || '/'
+                    };
+                    this.clients.push(client);
+                    this.triggerNotification('👤 Dodat klijent', `Klijent ${client.name} je uspešno unesen.`);
+                    this.newClient = { name: '', company: '', phone: '', email: '' };
+                    this.currentScreen = 'main';
+                },
+
+                handleAddPriceItem() {
+                    const priceItem = {
+                        id: this.priceItems.length + 1,
+                        name: this.newPriceItem.name,
+                        category: this.newPriceItem.category,
+                        price: parseFloat(this.newPriceItem.price)
+                    };
+                    this.priceItems.push(priceItem);
+                    this.triggerNotification('🏷️ Cenovnik ažuriran', `Usluga "${priceItem.name}" je dodata.`);
+                    this.newPriceItem = { name: '', category: 'Rad', price: '' };
+                    this.currentScreen = 'main';
+                },
+
+                // Wizard engine
+                startCreateQuote() {
+                    this.wizardStep = 1;
+                    this.wizardSelectedClient = null;
+                    this.wizardItems = [];
+                    this.wizardDiscount = 0;
+                    this.currentScreen = 'create-quote';
+                },
+
+                toggleWizardItem(item) {
+                    const idx = this.wizardItems.findIndex(i => i.item.id === item.id);
+                    if (idx > -1) {
+                        this.wizardItems.splice(idx, 1);
+                    } else {
+                        this.wizardItems.push({ item, qty: 1 });
+                    }
+                },
+
+                isItemInWizard(item) {
+                    return this.wizardItems.some(i => i.item.id === item.id);
+                },
+
+                getWizardItemQty(itemId) {
+                    const wi = this.wizardItems.find(i => i.item.id === itemId);
+                    return wi ? wi.qty : 0;
+                },
+
+                updateWizardItemQty(itemId, change) {
+                    const wi = this.wizardItems.find(i => i.item.id === itemId);
+                    if (wi) {
+                        wi.qty = Math.max(1, wi.qty + change);
+                    }
+                },
+
+                getWizardTotal() {
+                    return this.wizardItems.reduce((sum, wi) => sum + (wi.item.price * wi.qty), 0);
+                },
+
+                getWizardFinalTotal() {
+                    const total = this.getWizardTotal();
+                    const disc = parseFloat(this.wizardDiscount) || 0;
+                    return Math.round(total - (total * (disc / 100)));
+                },
+
+                finalizeQuote(status) {
+                    const id = String(1040 + this.quotes.length + 1);
+                    const newQuote = {
+                        id: id,
+                        clientId: this.wizardSelectedClient.id,
+                        clientName: this.wizardSelectedClient.name,
+                        items: this.wizardItems.map(wi => ({ name: wi.item.name, price: wi.item.price, qty: wi.qty })),
+                        discount: parseInt(this.wizardDiscount) || 0,
+                        total: this.getWizardFinalTotal(),
+                        status: status,
+                        date: new Date().toISOString().split('T')[0],
+                        trackingOpened: false,
+                        trackingTime: null
+                    };
+                    this.quotes.unshift(newQuote);
+                    this.clientPortalQuoteId = id; // auto switch portal to this
+                    this.triggerNotification('📝 Nova ponuda #' + id, `Ponuda za klijenta ${this.wizardSelectedClient.name} je kreirana.`);
+                    this.currentScreen = 'main';
+                    this.activeTab = 'quotes';
+                },
+
+                // Details Actions
+                convertQuoteToInvoice(quote) {
+                    const id = 'F-2026-00' + (this.invoices.length + 1);
+                    const newInvoice = {
+                        id,
+                        quoteId: quote.id,
+                        clientName: quote.clientName,
+                        total: quote.total,
+                        status: 'neplaćeno',
+                        date: new Date().toISOString().split('T')[0]
+                    };
+                    this.invoices.unshift(newInvoice);
+                    quote.status = 'prihvaćena';
+                    this.triggerNotification('🧾 Faktura kreirana', `Faktura ${id} je kreirana iz ponude.`);
+                    this.currentScreen = 'main';
+                    this.activeTab = 'invoices';
+                },
+
+                markInvoiceAsPaid(invoiceId) {
+                    const inv = this.invoices.find(i => i.id === invoiceId);
+                    if (inv) {
+                        inv.status = 'plaćeno';
+                        this.triggerNotification('💰 Faktura plaćena', `Faktura ${inv.id} je uspešno naplaćena!`);
+                    }
+                    if (this.selectedInvoice) this.selectedInvoice.status = 'plaćeno';
+                },
+
+                // Portal Simulator Logic
+                getCurrentPortalQuote() {
+                    return this.quotes.find(q => q.id === this.clientPortalQuoteId);
+                },
+
+                getDiscountAmount(quote) {
+                    const base = quote.items.reduce((sum, i) => sum + (i.price * i.qty), 0);
+                    return base * (quote.discount / 100);
+                },
+
+                setClientPortalQuote(quoteId) {
+                    this.clientPortalQuoteId = quoteId;
+                    this.rightPanelTab = 'simulator';
+                    this.triggerNotification('🔗 Link kopiran', 'SMS link do ponude je spreman za slanje klijentu.');
+                },
+
+                simulateClientOpeningLink(quoteId) {
+                    const q = this.quotes.find(quote => quote.id === quoteId);
+                    if (q) {
+                        q.trackingOpened = true;
+                        q.trackingTime = 'Danas u ' + new Date().toLocaleTimeString('sr-RS', { hour: '2-digit', minute: '2-digit' });
+                        
+                        setTimeout(() => {
+                            this.triggerNotification('🔔 Klijent otvorio ponudu!', `Klijent ${q.clientName} je upravo otvorio link za ponudu #${q.id}.`);
+                        }, 500);
+                    }
+                },
+
+                handleClientDecision(quoteId, approved) {
+                    const q = this.quotes.find(quote => quote.id === quoteId);
+                    if (q) {
+                        q.status = approved ? 'prihvaćena' : 'odbijena';
+                        if (this.selectedQuote && this.selectedQuote.id === quoteId) {
+                            this.selectedQuote.status = q.status;
+                        }
+                        this.triggerNotification(
+                            approved ? '✅ Ponuda PRIHVAĆENA!' : '❌ Ponuda odbijena',
+                            `Klijent ${q.clientName} je upravo ${approved ? 'ODOBRIO' : 'ODBIO'} ponudu #${quoteId}.`
+                        );
+                    }
+                },
+
+                resetDatabase() {
+                    this.clients = [
+                        { id: 1, name: 'Marko Marković', company: 'Marković Gradnja d.o.o.', email: 'marko@markovic.rs', phone: '064/123-4567', city: 'Beograd' },
+                        { id: 2, name: 'Jelena Jovanović', company: 'Frizerski Salon "Jeca"', email: 'jeca.salon@gmail.com', phone: '065/987-6543', city: 'Novi Sad' }
+                    ];
+                    this.quotes = [
+                        { id: '1042', clientId: 1, clientName: 'Marko Marković', items: [{ name: 'Montaža ugradnog vodokotlića', price: 6000, qty: 2 }], discount: 10, total: 10800, status: 'prihvaćena', date: '2026-06-12', trackingOpened: true, trackingTime: '12.06. u 14:32' },
+                        { id: '1043', clientId: 2, clientName: 'Jelena Jovanović', items: [{ name: 'Zamena ventila na bojleru', price: 3500, qty: 1 }], discount: 0, total: 3500, status: 'poslata', date: '2026-06-14', trackingOpened: false, trackingTime: null }
+                    ];
+                    this.invoices = [];
+                    this.clientPortalQuoteId = '1043';
+                    this.triggerNotification('🔄 Baza resetovana', 'Baza podataka je vraćena na početno stanje.');
+                },
+
+                getBadgeClass(status) {
+                    switch (status) {
+                        case 'prihvaćena': return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
+                        case 'poslata': return 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30';
+                        case 'odbijena': return 'bg-rose-500/20 text-rose-400 border-rose-500/30';
+                        default: return 'bg-slate-800 text-slate-400 border-slate-700';
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>

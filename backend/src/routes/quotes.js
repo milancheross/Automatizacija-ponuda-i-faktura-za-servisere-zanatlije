@@ -80,6 +80,43 @@ router.get('/track/:token', async (req, res, next) => {
   }
 });
 
+// ---------------------------------------------------------------------------
+// PUBLIC route — POST /quotes/track/:token/respond — client accepts/declines
+// ---------------------------------------------------------------------------
+router.post('/track/:token/respond', async (req, res, next) => {
+  try {
+    const { token } = req.params;
+    const { accepted } = req.body;
+
+    const { data: quote, error } = await supabase
+      .from('quotes')
+      .select('id, user_id, status, clients(name), users(expo_push_token)')
+      .eq('tracking_token', token)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!quote) return res.status(404).json({ error: 'Quote not found' });
+    if (quote.status !== 'sent') {
+      return res.status(409).json({ error: 'Quote already responded to' });
+    }
+
+    const newStatus = accepted ? 'accepted' : 'declined';
+    await supabase.from('quotes').update({ status: newStatus }).eq('id', quote.id);
+
+    const pushToken = quote.users?.expo_push_token;
+    if (pushToken) {
+      const clientName = quote.clients?.name || 'Klijent';
+      const title = accepted ? '✅ Ponuda PRIHVAĆENA!' : '❌ Ponuda odbijena';
+      const body = `${clientName} je ${accepted ? 'prihvatio/la' : 'odbio/la'} ponudu.`;
+      await sendPushNotification(pushToken, title, body);
+    }
+
+    return res.json({ success: true, status: newStatus });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // All routes below require authentication
 router.use(authMiddleware);
 

@@ -3,7 +3,8 @@
 require('dotenv').config();
 
 const express = require('express');
-const cors = require('cors');
+const cors    = require('cors');
+const path    = require('path');
 
 const authRoutes       = require('./routes/auth');
 const clientsRoutes    = require('./routes/clients');
@@ -25,11 +26,22 @@ app.use(express.urlencoded({ extended: true }));
 // Routes
 // ---------------------------------------------------------------------------
 
-// Public quote tracking shortlink: GET /q/:token
-// Delegate to the quotes router's /track/:token handler (no auth)
+// Serve client-facing tracking portal HTML (browser) or JSON (API clients)
+// GET /q/:token  → serves portal.html (browser opens this link from SMS/Viber)
+// The portal.html JS then fetches /q/:token with fetch() to get the JSON data
 app.get('/q/:token', (req, res, next) => {
-  // Rewrite path so the quotes router handles it as /track/:token
+  const acceptsHtml = req.headers.accept && req.headers.accept.includes('text/html');
+  if (acceptsHtml) {
+    return res.sendFile(path.join(__dirname, '../public/portal.html'));
+  }
+  // API call from portal.html's JS fetch()
   req.url = `/track/${req.params.token}`;
+  quotesRoutes(req, res, next);
+});
+
+// POST /q/:token/respond — client accepts or declines (called from portal.html)
+app.post('/q/:token/respond', (req, res, next) => {
+  req.url = `/track/${req.params.token}/respond`;
   quotesRoutes(req, res, next);
 });
 
