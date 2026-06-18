@@ -31,7 +31,6 @@ router.get('/track/:token', async (req, res, next) => {
     if (error) throw error;
     if (!quote) return res.status(404).json({ error: 'Quote not found' });
 
-    // Fetch quote items
     const { data: items, error: itemsError } = await supabase
       .from('quote_items')
       .select('*')
@@ -39,7 +38,6 @@ router.get('/track/:token', async (req, res, next) => {
 
     if (itemsError) throw itemsError;
 
-    // If this is the first open, stamp opened_at and notify the tradesperson
     if (!quote.opened_at) {
       await supabase
         .from('quotes')
@@ -49,7 +47,6 @@ router.get('/track/:token', async (req, res, next) => {
       await logEvent(quote.id, quote.user_id, 'quote_opened', {});
       await logFirstEvent(quote.user_id, 'first_quote_opened', {});
 
-      // Use the already-joined users data (contains expo_push_token)
       const userData = quote.users;
       if (userData && userData.expo_push_token) {
         const clientName = quote.clients ? quote.clients.name : 'Klijent';
@@ -61,7 +58,6 @@ router.get('/track/:token', async (req, res, next) => {
       }
     }
 
-    // Strip sensitive fields before returning to the public client
     const { expo_push_token: _tok, ...safeCompany } = quote.users || {};
 
     return res.json({
@@ -152,9 +148,7 @@ router.post('/quick', async (req, res, next) => {
         .eq('user_id', req.userId)
         .eq('phone', client_phone.trim())
         .maybeSingle();
-      if (existing) {
-        clientId = existing.id;
-      }
+      if (existing) clientId = existing.id;
     }
 
     if (!clientId) {
@@ -167,10 +161,8 @@ router.post('/quick', async (req, res, next) => {
       clientId = newClient.id;
     }
 
-    // 2. Create quote with single item
-    const item = { name: description.trim(), unit: 'paušal', quantity: 1, price: parsedPrice, total: parsedPrice };
+    // 2. Create quote
     const trackingToken = uuidv4();
-
     const { data: quote, error: quoteErr } = await supabase
       .from('quotes')
       .insert({
@@ -187,7 +179,15 @@ router.post('/quick', async (req, res, next) => {
     if (quoteErr) throw quoteErr;
 
     // 3. Insert quote item
-    await supabase.from('quote_items').insert({ ...item, quote_id: quote.id });
+    const { error: itemErr } = await supabase.from('quote_items').insert({
+      quote_id: quote.id,
+      name: description.trim(),
+      unit: 'paušal',
+      quantity: 1,
+      price: parsedPrice,
+      total: parsedPrice,
+    });
+    if (itemErr) throw itemErr;
 
     // 4. Log events
     await logEvent(quote.id, req.userId, 'quote_created', { method: 'quick' });
@@ -239,7 +239,15 @@ router.get('/', async (req, res, next) => {
     const { data, error } = await query;
     if (error) throw error;
 
-    return res.json({ quotes: data });
+    const normalized = (data || []).map(q => ({
+      ...q,
+      client_id: q.clients?.id ?? null,
+      client: q.clients ?? null,
+      total: q.total_amount,
+      clients: undefined,
+    }));
+
+    return res.json({ quotes: normalized });
   } catch (err) {
     next(err);
   }
@@ -255,7 +263,6 @@ router.post('/', async (req, res, next) => {
       note, items = [],
     } = req.body;
 
-    // Validate & normalise items
     const normalisedItems = items.map((item) => {
       const qty   = parseFloat(item.quantity) || 1;
       const price = parseFloat(item.price)    || 0;
@@ -270,7 +277,6 @@ router.post('/', async (req, res, next) => {
 
     const total_amount = calcTotal(normalisedItems, parseFloat(discount_percent) || 0);
 
-    // Insert quote
     const { data: quote, error: quoteError } = await supabase
       .from('quotes')
       .insert({
@@ -287,7 +293,6 @@ router.post('/', async (req, res, next) => {
 
     if (quoteError) throw quoteError;
 
-    // Insert items
     let insertedItems = [];
     if (normalisedItems.length > 0) {
       const { data: itemRows, error: itemError } = await supabase
@@ -333,7 +338,18 @@ router.get('/:id', async (req, res, next) => {
 
     if (itemsError) throw itemsError;
 
-    return res.json({ quote: { ...quote, items } });
+    const normalized = {
+      ...quote,
+      client_id: quote.clients?.id ?? quote.client_id ?? null,
+      client: quote.clients ?? null,
+      total: quote.total_amount,
+      subtotal: quote.total_amount,
+      discount_amount: 0,
+      items: (items || []).map(i => ({ ...i, unit_price: i.price })),
+      clients: undefined,
+    };
+
+    return res.json({ quote: normalized });
   } catch (err) {
     next(err);
   }
@@ -357,10 +373,7 @@ router.put('/:id', async (req, res, next) => {
       return res.status(400).json({ error: 'Only draft quotes can be edited' });
     }
 
-    const {
-      client_id, valid_until, discount_percent,
-      note, items,
-    } = req.body;
+    const { client_id, valid_until, discount_percent, note, items } = req.body;
 
     const updates = {};
     if (client_id        !== undefined) updates.client_id        = client_id;
@@ -368,7 +381,6 @@ router.put('/:id', async (req, res, next) => {
     if (discount_percent !== undefined) updates.discount_percent = parseFloat(discount_percent);
     if (note             !== undefined) updates.note             = note;
 
-    // Recalculate total if items or discount changed
     let normalisedItems;
     if (items !== undefined) {
       normalisedItems = items.map((item) => {
@@ -389,7 +401,6 @@ router.put('/:id', async (req, res, next) => {
 
       updates.total_amount = calcTotal(normalisedItems, discount);
     } else if (discount_percent !== undefined) {
-      // Recalculate total with existing items and new discount
       const { data: existingItems } = await supabase
         .from('quote_items')
         .select('total')
@@ -411,7 +422,6 @@ router.put('/:id', async (req, res, next) => {
       updatedQuote = data;
     }
 
-    // Replace items if provided
     if (normalisedItems !== undefined) {
       await supabase.from('quote_items').delete().eq('quote_id', req.params.id);
       if (normalisedItems.length > 0) {
@@ -421,7 +431,6 @@ router.put('/:id', async (req, res, next) => {
       }
     }
 
-    // Return fresh data
     const { data: finalItems } = await supabase
       .from('quote_items')
       .select('*')
@@ -489,12 +498,8 @@ router.post('/:id/convert-to-invoice', async (req, res, next) => {
     if (quoteError) throw quoteError;
     if (!quote) return res.status(404).json({ error: 'Quote not found' });
 
-    const {
-      due_date,
-      invoice_number,
-    } = req.body;
+    const { due_date, invoice_number } = req.body;
 
-    // Generate invoice number if not provided: INV-YYYYMMDD-XXXX
     let invNumber = invoice_number;
     if (!invNumber) {
       const today = new Date();
@@ -503,7 +508,6 @@ router.post('/:id/convert-to-invoice', async (req, res, next) => {
       invNumber = `INV-${datePart}-${rand}`;
     }
 
-    // Create invoice
     const { data: invoice, error: invError } = await supabase
       .from('invoices')
       .insert({
@@ -521,7 +525,6 @@ router.post('/:id/convert-to-invoice', async (req, res, next) => {
 
     if (invError) throw invError;
 
-    // Update quote status to 'accepted'
     await supabase
       .from('quotes')
       .update({ status: 'accepted' })

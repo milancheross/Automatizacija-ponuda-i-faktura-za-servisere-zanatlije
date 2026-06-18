@@ -25,74 +25,100 @@ export default function QuickQuoteScreen() {
     setLoading(true);
     try {
       const parsedPrice = parseFloat(price);
-      const result = await quickQuote({
-        client_name: clientName.trim(),
-        client_phone: clientPhone.trim() || undefined,
-        description: description.trim(),
-        price: parsedPrice,
-      });
 
-      // Generate PDF and share
+      // Generate PDF first (from local state — works even if API call is slow)
       const companyName = user?.company_name || 'Servis';
       const today = new Date().toLocaleDateString('sr-RS');
       const formattedPrice = parsedPrice.toLocaleString('sr-RS', { minimumFractionDigits: 2 }) + ' RSD';
+      const clientNameVal = clientName.trim();
+      const descriptionVal = description.trim();
+      const clientPhoneVal = clientPhone.trim();
 
       const html = `<!DOCTYPE html>
 <html lang="sr">
 <head>
   <meta charset="UTF-8"/>
   <style>
-    body { font-family: Arial, sans-serif; padding: 40px; color: #1a1a2e; }
-    .header { border-bottom: 3px solid #1a56db; padding-bottom: 20px; margin-bottom: 24px; display: flex; justify-content: space-between; }
-    .company { font-size: 22px; font-weight: 700; color: #1a56db; }
-    .title { font-size: 28px; font-weight: 800; color: #1a56db; text-align: right; }
-    .date { font-size: 12px; color: #777; text-align: right; }
-    .section { background: #f7f9fc; border-left: 4px solid #1a56db; padding: 16px; border-radius: 8px; margin-bottom: 16px; }
-    .label { font-size: 11px; text-transform: uppercase; color: #888; margin-bottom: 6px; }
-    .value { font-size: 14px; font-weight: 600; }
-    table { width: 100%; border-collapse: collapse; margin: 16px 0; }
-    thead { background: #1a56db; color: #fff; }
-    th { padding: 10px 12px; text-align: left; font-size: 12px; }
-    td { padding: 10px 12px; border-bottom: 1px solid #e8ecf0; }
-    .total-row { background: #1a56db; color: #fff; font-weight: 700; font-size: 16px; }
-    .total-row td { padding: 14px 12px; }
-    .footer { margin-top: 32px; text-align: center; font-size: 11px; color: #aaa; border-top: 1px solid #e8ecf0; padding-top: 16px; }
+    body { font-family: Arial, sans-serif; padding: 32px; color: #1a1a2e; font-size: 14px; }
+    .header-top { margin-bottom: 24px; border-bottom: 3px solid #1a56db; padding-bottom: 16px; }
+    .company { font-size: 20px; font-weight: bold; color: #1a56db; }
+    .doc-title { font-size: 26px; font-weight: bold; color: #1a56db; text-align: right; margin-top: -28px; }
+    .doc-date { font-size: 12px; color: #777; text-align: right; margin-top: 4px; }
+    .section { background: #f7f9fc; border-left: 4px solid #1a56db; padding: 14px 16px; border-radius: 6px; margin-bottom: 20px; }
+    .section-label { font-size: 11px; text-transform: uppercase; color: #888; margin-bottom: 6px; letter-spacing: 1px; }
+    .section-value { font-size: 15px; font-weight: bold; color: #111; }
+    .section-phone { font-size: 13px; color: #555; margin-top: 4px; }
+    .items-header { background: #1a56db; color: #fff; padding: 10px 14px; border-radius: 4px 4px 0 0; }
+    .items-header-row { display: table; width: 100%; }
+    .items-header-desc { display: table-cell; font-size: 12px; font-weight: bold; text-transform: uppercase; width: 70%; }
+    .items-header-amount { display: table-cell; font-size: 12px; font-weight: bold; text-transform: uppercase; text-align: right; width: 30%; }
+    .item-row { display: table; width: 100%; padding: 12px 14px; background: #f7f9fc; border: 1px solid #e8ecf0; border-top: none; }
+    .item-desc { display: table-cell; font-size: 14px; width: 70%; }
+    .item-amount { display: table-cell; font-size: 14px; text-align: right; width: 30%; }
+    .total-row { background: #1a56db; color: #fff; padding: 14px; border-radius: 0 0 4px 4px; display: table; width: 100%; margin-bottom: 24px; }
+    .total-label { display: table-cell; font-size: 14px; font-weight: bold; width: 70%; }
+    .total-value { display: table-cell; font-size: 16px; font-weight: bold; text-align: right; width: 30%; }
+    .footer { margin-top: 32px; text-align: center; font-size: 11px; color: #aaa; border-top: 1px solid #e8ecf0; padding-top: 14px; }
   </style>
 </head>
 <body>
-  <div class="header">
+  <div class="header-top">
     <div class="company">${companyName}</div>
-    <div>
-      <div class="title">PONUDA</div>
-      <div class="date">Datum: ${today}</div>
+    <div class="doc-title">PONUDA</div>
+    <div class="doc-date">Datum: ${today}</div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Klijent</div>
+    <div class="section-value">${clientNameVal}</div>
+    ${clientPhoneVal ? `<div class="section-phone">Tel: ${clientPhoneVal}</div>` : ''}
+  </div>
+
+  <div class="items-header">
+    <div class="items-header-row">
+      <span class="items-header-desc">Opis usluge</span>
+      <span class="items-header-amount">Iznos</span>
     </div>
   </div>
-  <div class="section">
-    <div class="label">Klijent</div>
-    <div class="value">${clientName.trim()}</div>
-    ${clientPhone ? `<div style="font-size:13px;margin-top:4px">📞 ${clientPhone.trim()}</div>` : ''}
+  <div class="item-row">
+    <span class="item-desc">${descriptionVal}</span>
+    <span class="item-amount">${formattedPrice}</span>
   </div>
-  <table>
-    <thead><tr><th>Opis usluge</th><th style="text-align:right">Iznos</th></tr></thead>
-    <tbody>
-      <tr><td>${description.trim()}</td><td style="text-align:right">${formattedPrice}</td></tr>
-    </tbody>
-    <tfoot>
-      <tr class="total-row"><td>UKUPNO ZA UPLATU:</td><td style="text-align:right">${formattedPrice}</td></tr>
-    </tfoot>
-  </table>
-  <div class="footer">Dokument generisan automatski · ${companyName}</div>
+  <div class="total-row">
+    <span class="total-label">UKUPNO ZA UPLATU:</span>
+    <span class="total-value">${formattedPrice}</span>
+  </div>
+
+  <div class="footer">Dokument generisan automatski &middot; ${companyName}</div>
 </body>
 </html>`;
 
+      // Save to backend (fire but don't block PDF sharing)
+      const apiPromise = quickQuote({
+        client_name: clientNameVal,
+        client_phone: clientPhoneVal || undefined,
+        description: descriptionVal,
+        price: parsedPrice,
+      }).catch(err => {
+        console.warn('Quick quote API error (non-fatal):', err.message);
+        return null;
+      });
+
+      // Generate and share PDF
       const { uri } = await Print.printToFileAsync({ html });
       await Sharing.shareAsync(uri, {
         mimeType: 'application/pdf',
-        dialogTitle: `Ponuda — ${clientName.trim()}`,
+        dialogTitle: `Ponuda — ${clientNameVal}`,
         UTI: 'com.adobe.pdf',
       });
 
-      router.replace(`/quote/${result.quote_id}`);
+      // Navigate after sharing
+      const result = await apiPromise;
+      if (result?.quote_id) {
+        router.replace(`/quote/${result.quote_id}`);
+      } else {
+        router.replace('/(tabs)');
+      }
     } catch (err: any) {
       Alert.alert('Greška', err.message || 'Nije moguće kreirati ponudu.');
     } finally {
@@ -106,18 +132,15 @@ export default function QuickQuoteScreen() {
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
 
-        {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>Brza ponuda</Text>
           <Text style={styles.subtitle}>Popuni 4 polja i pošalji za 60 sekundi</Text>
         </View>
 
-        {/* Timer hint */}
         <View style={styles.timerHint}>
           <Text style={styles.timerText}>⚡ Prosečno vreme: 45 sekundi</Text>
         </View>
 
-        {/* Form */}
         <View style={styles.card}>
           <Text style={styles.label}>Ime klijenta *</Text>
           <TextInput
@@ -162,7 +185,6 @@ export default function QuickQuoteScreen() {
           />
         </View>
 
-        {/* Live total preview */}
         {total > 0 && (
           <View style={styles.totalPreview}>
             <Text style={styles.totalLabel}>Iznos ponude:</Text>
@@ -170,7 +192,6 @@ export default function QuickQuoteScreen() {
           </View>
         )}
 
-        {/* Submit */}
         <TouchableOpacity
           style={[styles.submitBtn, !canSubmit && styles.submitBtnDisabled]}
           onPress={handleSubmit}
