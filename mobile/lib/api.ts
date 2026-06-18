@@ -206,37 +206,42 @@ export async function register(
 }
 
 export async function getProfile(): Promise<User> {
-  return apiFetch('/auth/profile');
+  const data = await apiFetch<{ user: User }>('/auth/profile');
+  return data.user;
 }
 
 export async function updateProfile(data: UpdateProfileData): Promise<User> {
-  return apiFetch('/auth/profile', {
+  const res = await apiFetch<{ user: User }>('/auth/profile', {
     method: 'PUT',
     body: JSON.stringify(data),
   });
+  return res.user;
 }
 
 // ─── Clients ──────────────────────────────────────────────────────────────────
 
 export async function getClients(): Promise<Client[]> {
-  return apiFetch('/clients');
+  const data = await apiFetch<{ clients: Client[] }>('/clients');
+  return data.clients;
 }
 
 export async function createClient(data: CreateClientData): Promise<Client> {
-  return apiFetch('/clients', {
+  const res = await apiFetch<{ client: Client }>('/clients', {
     method: 'POST',
     body: JSON.stringify(data),
   });
+  return res.client;
 }
 
 export async function updateClient(
   id: number,
   data: Partial<CreateClientData>,
 ): Promise<Client> {
-  return apiFetch(`/clients/${id}`, {
+  const res = await apiFetch<{ client: Client }>(`/clients/${id}`, {
     method: 'PUT',
     body: JSON.stringify(data),
   });
+  return res.client;
 }
 
 export async function deleteClient(id: number): Promise<void> {
@@ -246,26 +251,29 @@ export async function deleteClient(id: number): Promise<void> {
 // ─── Price items ──────────────────────────────────────────────────────────────
 
 export async function getPriceItems(): Promise<PriceItem[]> {
-  return apiFetch('/price-items');
+  const data = await apiFetch<{ price_items: PriceItem[] }>('/price-items');
+  return data.price_items;
 }
 
 export async function createPriceItem(
   data: CreatePriceItemData,
 ): Promise<PriceItem> {
-  return apiFetch('/price-items', {
+  const res = await apiFetch<{ price_item: PriceItem }>('/price-items', {
     method: 'POST',
     body: JSON.stringify(data),
   });
+  return res.price_item;
 }
 
 export async function updatePriceItem(
   id: number,
   data: Partial<CreatePriceItemData>,
 ): Promise<PriceItem> {
-  return apiFetch(`/price-items/${id}`, {
+  const res = await apiFetch<{ price_item: PriceItem }>(`/price-items/${id}`, {
     method: 'PUT',
     body: JSON.stringify(data),
   });
+  return res.price_item;
 }
 
 export async function deletePriceItem(id: number): Promise<void> {
@@ -275,46 +283,54 @@ export async function deletePriceItem(id: number): Promise<void> {
 // ─── Quotes ───────────────────────────────────────────────────────────────────
 
 export async function getQuotes(): Promise<Quote[]> {
-  return apiFetch('/quotes');
+  const data = await apiFetch<{ quotes: Quote[] }>('/quotes');
+  return data.quotes;
 }
 
 export async function getQuote(id: number): Promise<Quote> {
-  return apiFetch(`/quotes/${id}`);
+  const data = await apiFetch<{ quote: Quote }>(`/quotes/${id}`);
+  return data.quote;
 }
 
 export async function createQuote(data: CreateQuoteData): Promise<Quote> {
-  return apiFetch('/quotes', {
+  const res = await apiFetch<{ quote: Quote }>('/quotes', {
     method: 'POST',
     body: JSON.stringify(data),
   });
+  return res.quote;
 }
 
 export async function updateQuote(
   id: number,
   data: Partial<CreateQuoteData>,
 ): Promise<Quote> {
-  return apiFetch(`/quotes/${id}`, {
+  const res = await apiFetch<{ quote: Quote }>(`/quotes/${id}`, {
     method: 'PUT',
     body: JSON.stringify(data),
   });
+  return res.quote;
 }
 
 export async function sendQuote(id: number): Promise<Quote> {
-  return apiFetch(`/quotes/${id}/send`, { method: 'POST' });
+  const res = await apiFetch<{ quote: Quote }>(`/quotes/${id}/send`, { method: 'POST' });
+  return res.quote;
 }
 
 export async function convertToInvoice(id: number): Promise<Invoice> {
-  return apiFetch(`/quotes/${id}/convert`, { method: 'POST' });
+  const res = await apiFetch<{ invoice: Invoice }>(`/quotes/${id}/convert`, { method: 'POST' });
+  return res.invoice;
 }
 
 // ─── Invoices ─────────────────────────────────────────────────────────────────
 
 export async function getInvoices(): Promise<Invoice[]> {
-  return apiFetch('/invoices');
+  const data = await apiFetch<{ invoices: Invoice[] }>('/invoices');
+  return data.invoices;
 }
 
 export async function getInvoice(id: number): Promise<Invoice> {
-  return apiFetch(`/invoices/${id}`);
+  const data = await apiFetch<{ invoice: Invoice }>(`/invoices/${id}`);
+  return data.invoice;
 }
 
 export async function markPaid(id: number): Promise<Invoice> {
