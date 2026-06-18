@@ -27,7 +27,7 @@ export default function LoginScreen() {
     }
     setLoading(true);
     try {
-      await login(email.trim(), password);
+      await login(email.trim().toLowerCase(), password);
     } catch (err: any) {
       Alert.alert('Greška pri prijavi', err.message || 'Proverite podatke i pokušajte ponovo');
     } finally {
@@ -60,6 +60,7 @@ export default function LoginScreen() {
               autoCapitalize="none"
               keyboardType="email-address"
               autoComplete="email"
+              returnKeyType="next"
             />
           </View>
 
@@ -72,6 +73,8 @@ export default function LoginScreen() {
               placeholder="••••••••"
               secureTextEntry
               autoComplete="password"
+              returnKeyType="done"
+              onSubmitEditing={handleLogin}
             />
           </View>
 

@@ -6,7 +6,7 @@ import {
 import { useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { getInvoice, markPaid, Invoice, getClients, Client } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
-import { shareQuotePDF } from '../../lib/pdf';
+import { printInvoice } from '../../lib/pdf';
 import StatusBadge from '../../components/StatusBadge';
 import QuoteItemRow from '../../components/QuoteItemRow';
 
@@ -20,13 +20,13 @@ export default function InvoiceDetailScreen() {
 
   const loadInvoice = useCallback(async () => {
     try {
-      const inv = await getInvoice(Number(id));
+      const inv = await getInvoice(id);
       setInvoice(inv);
       if (inv.client) {
         setClient(inv.client);
-      } else {
+      } else if (inv.client_id) {
         const clients = await getClients();
-        setClient(clients.find(c => c.id === inv.client_id) || null);
+        setClient(clients.find(c => String(c.id) === String(inv.client_id)) || null);
       }
     } catch (err: any) {
       Alert.alert('Greška', err.message);
@@ -46,7 +46,7 @@ export default function InvoiceDetailScreen() {
           setMarkingPaid(true);
           try {
             const updated = await markPaid(invoice.id);
-            setInvoice(updated);
+            setInvoice(prev => prev ? { ...prev, ...updated } : updated);
           } catch (err: any) {
             Alert.alert('Greška', err.message);
           } finally {
@@ -58,22 +58,10 @@ export default function InvoiceDetailScreen() {
   }
 
   async function handleSharePDF() {
-    if (!invoice || !client || !user) return;
-    // Build a quote-like object from invoice for PDF generation
-    const quoteForPDF = {
-      id: invoice.id,
-      client_id: invoice.client_id,
-      client: client,
-      status: 'poslata' as const,
-      items: invoice.items,
-      subtotal: invoice.subtotal,
-      discount_percent: invoice.discount_percent,
-      total: invoice.total,
-      created_at: invoice.issued_at,
-      updated_at: invoice.created_at,
-    };
+    if (!invoice || !user) return;
     try {
-      await shareQuotePDF(quoteForPDF as any, client, user);
+      const invoiceWithClient = { ...invoice, client: client ?? invoice.client };
+      await printInvoice(invoiceWithClient as any, user);
     } catch (err: any) {
       Alert.alert('Greška', 'Nije moguće generisati PDF: ' + err.message);
     }
@@ -88,11 +76,13 @@ export default function InvoiceDetailScreen() {
   }
 
   const disc = invoice.discount_percent || 0;
+  const total = invoice.total ?? 0;
+  const subtotal = invoice.subtotal ?? total;
+  const isPaid = invoice.status === 'placeno' || invoice.status === 'paid';
 
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scroll}>
-        {/* Header */}
         <View style={styles.headerCard}>
           <View style={styles.headerTop}>
             <View>
@@ -101,7 +91,7 @@ export default function InvoiceDetailScreen() {
             </View>
             <StatusBadge status={invoice.status} />
           </View>
-          <Text style={styles.totalAmount}>{invoice.total.toLocaleString('sr-RS')} RSD</Text>
+          <Text style={styles.totalAmount}>{total.toLocaleString('sr-RS')} RSD</Text>
           <Text style={styles.headerDate}>
             Izdato: {new Date(invoice.issued_at).toLocaleDateString('sr-RS')}
             {invoice.due_at ? ` • Rok: ${new Date(invoice.due_at).toLocaleDateString('sr-RS')}` : ''}
@@ -111,7 +101,6 @@ export default function InvoiceDetailScreen() {
           )}
         </View>
 
-        {/* Client */}
         {client && (
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Klijent</Text>
@@ -122,35 +111,33 @@ export default function InvoiceDetailScreen() {
           </View>
         )}
 
-        {/* Items */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Stavke</Text>
-          {invoice.items.map((item, idx) => (
+          {(invoice.items || []).map((item, idx) => (
             <QuoteItemRow key={idx} item={item} index={idx} readOnly />
           ))}
           <View style={styles.totalsSection}>
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>Osnovica:</Text>
-              <Text style={styles.totalValue}>{invoice.subtotal.toLocaleString('sr-RS')} RSD</Text>
+              <Text style={styles.totalValue}>{subtotal.toLocaleString('sr-RS')} RSD</Text>
             </View>
             {disc > 0 && (
               <View style={styles.totalRow}>
                 <Text style={[styles.totalLabel, { color: '#ef4444' }]}>Popust ({disc}%):</Text>
                 <Text style={[styles.totalValue, { color: '#ef4444' }]}>
-                  -{(invoice.subtotal * disc / 100).toLocaleString('sr-RS')} RSD
+                  -{(subtotal * disc / 100).toLocaleString('sr-RS')} RSD
                 </Text>
               </View>
             )}
             <View style={[styles.totalRow, styles.grandTotalRow]}>
               <Text style={styles.grandTotalLabel}>UKUPNO:</Text>
-              <Text style={styles.grandTotalValue}>{invoice.total.toLocaleString('sr-RS')} RSD</Text>
+              <Text style={styles.grandTotalValue}>{total.toLocaleString('sr-RS')} RSD</Text>
             </View>
           </View>
         </View>
 
-        {/* Actions */}
         <View style={styles.actionsCard}>
-          {invoice.status === 'neplaceno' && (
+          {!isPaid && (
             <TouchableOpacity
               style={[styles.primaryBtn, markingPaid && styles.disabledBtn]}
               onPress={handleMarkPaid}

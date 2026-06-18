@@ -6,7 +6,7 @@ import {
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { getQuote, sendQuote, convertToInvoice, Quote, getClients, Client, createJob } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
-import { shareQuotePDF } from '../../lib/pdf';
+import { printQuote } from '../../lib/pdf';
 import StatusBadge from '../../components/StatusBadge';
 import QuoteItemRow from '../../components/QuoteItemRow';
 
@@ -23,7 +23,6 @@ export default function QuoteDetailScreen() {
 
   const loadQuote = useCallback(async () => {
     try {
-      // Pass id directly as string — UUIDs must not be converted to Number
       const q = await getQuote(id);
       setQuote(q);
       if (q.client) {
@@ -119,7 +118,7 @@ export default function QuoteDetailScreen() {
   async function handleSharePDF() {
     if (!quote || !client || !user) return;
     try {
-      await shareQuotePDF(quote, client, user);
+      await printQuote(quote, client, user);
     } catch (err: any) {
       Alert.alert('Greška', 'Nije moguće generisati PDF: ' + err.message);
     }
@@ -144,7 +143,6 @@ export default function QuoteDetailScreen() {
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scroll}>
-        {/* Header Card */}
         <View style={styles.headerCard}>
           <View style={styles.headerTop}>
             <Text style={styles.quoteNum}>Ponuda #{String(quote.id).slice(0, 8)}</Text>
@@ -160,7 +158,6 @@ export default function QuoteDetailScreen() {
           )}
         </View>
 
-        {/* Client Card */}
         {client && (
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Klijent</Text>
@@ -171,13 +168,11 @@ export default function QuoteDetailScreen() {
           </View>
         )}
 
-        {/* Items */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Stavke</Text>
           {(quote.items || []).map((item, idx) => (
             <QuoteItemRow key={idx} item={item} index={idx} readOnly />
           ))}
-
           <View style={styles.totalsSection}>
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>Osnovica:</Text>
@@ -198,19 +193,15 @@ export default function QuoteDetailScreen() {
           </View>
         </View>
 
-        {/* Meta */}
         {(quote.valid_until || quote.note) && (
           <View style={styles.card}>
             {quote.valid_until && (
               <Text style={styles.metaText}>📅 Važi do: {new Date(quote.valid_until).toLocaleDateString('sr-RS')}</Text>
             )}
-            {quote.note && (
-              <Text style={styles.metaText}>📝 {quote.note}</Text>
-            )}
+            {quote.note && <Text style={styles.metaText}>📝 {quote.note}</Text>}
           </View>
         )}
 
-        {/* Actions */}
         <View style={styles.actionsCard}>
           {needsFollowUp() && (
             <View style={followUpStyles.banner}>
@@ -225,20 +216,12 @@ export default function QuoteDetailScreen() {
           )}
 
           {(quote?.status === 'accepted' || quote?.status === 'prihvacena') && !jobId && (
-            <TouchableOpacity
-              style={jobStyles.createJobBtn}
-              onPress={createJobFromQuote}
-              disabled={creatingJob}
-            >
-              {creatingJob
-                ? <ActivityIndicator color="#fff" />
-                : <Text style={jobStyles.createJobBtnText}>Pretvori u Posao →</Text>
-              }
+            <TouchableOpacity style={jobStyles.createJobBtn} onPress={createJobFromQuote} disabled={creatingJob}>
+              {creatingJob ? <ActivityIndicator color="#fff" /> : <Text style={jobStyles.createJobBtnText}>Pretvori u Posao →</Text>}
             </TouchableOpacity>
           )}
           {jobId && (
-            <TouchableOpacity style={jobStyles.viewJobBtn} onPress={() => router.push(`/job/${jobId}`)}
-            >
+            <TouchableOpacity style={jobStyles.viewJobBtn} onPress={() => router.push(`/job/${jobId}`)}>
               <Text style={jobStyles.viewJobBtnText}>Vidi posao</Text>
             </TouchableOpacity>
           )}
@@ -250,8 +233,7 @@ export default function QuoteDetailScreen() {
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.actionBtn, styles.primaryBtn, actionLoading && styles.disabledBtn]}
-                onPress={handleSend}
-                disabled={actionLoading}
+                onPress={handleSend} disabled={actionLoading}
               >
                 {actionLoading ? <ActivityIndicator color="#fff" size="small" /> :
                   <Text style={[styles.actionBtnText, styles.primaryBtnText]}>📤 Pošalji ponudu</Text>}
@@ -262,8 +244,7 @@ export default function QuoteDetailScreen() {
           {(quote.status === 'poslata' || quote.status === 'sent') && (
             <TouchableOpacity
               style={[styles.actionBtn, styles.primaryBtn, actionLoading && styles.disabledBtn]}
-              onPress={handleConvert}
-              disabled={actionLoading}
+              onPress={handleConvert} disabled={actionLoading}
             >
               {actionLoading ? <ActivityIndicator color="#fff" size="small" /> :
                 <Text style={[styles.actionBtnText, styles.primaryBtnText]}>🧾 Konvertuj u fakturu</Text>}
@@ -330,8 +311,7 @@ const followUpStyles = StyleSheet.create({
 const jobStyles = StyleSheet.create({
   createJobBtn: {
     backgroundColor: '#059669', borderRadius: 12, padding: 16, alignItems: 'center',
-    marginBottom: 8, shadowColor: '#059669', shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.25, shadowRadius: 6, elevation: 5,
+    marginBottom: 8,
   },
   createJobBtnText: { color: '#fff', fontSize: 15, fontWeight: '800' },
   viewJobBtn: {
