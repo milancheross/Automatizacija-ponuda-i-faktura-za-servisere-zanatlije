@@ -15,13 +15,11 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: npm
-          cache-dependency-path: mobile/package-lock.json
+          node-version: 22
 
       - name: Install dependencies
         working-directory: mobile
-        run: npm ci
+        run: npm install
 
       - name: Build APK with EAS
         working-directory: mobile
@@ -31,9 +29,5 @@ jobs:
           npm install -g eas-cli
           eas build --platform android --profile preview --non-interactive
 
-      - name: Get APK download URL
-        working-directory: mobile
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: |
-          echo "Build complete! Download APK from: https://expo.dev/accounts/milancheross/projects/servis-ponuda/builds"
+      - name: Done
+        run: echo "APK ready at https://expo.dev/accounts/milancheross/projects/servis-ponuda/builds"
