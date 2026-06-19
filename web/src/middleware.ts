@@ -6,7 +6,6 @@ const PUBLIC_PATHS = ['/login', '/register', '/q/']
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
 
-  // Allow public paths and API routes
   if (
     pathname.startsWith('/api/') ||
     pathname.startsWith('/_next/') ||
