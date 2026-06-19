@@ -8,10 +8,13 @@ export const POST = withAuth(async (_req, userId, { params }) => {
     .eq('id', params.id)
     .eq('user_id', userId)
     .single()
-  if (qErr) return err('Ponuda nije pronađena', 404)
+  if (qErr) return err('Ponuda nije pronadjena', 404)
 
   const year = new Date().getFullYear()
-  const { count } = await supabase.from('invoices').select('*', { count: 'exact', head: true }).eq('user_id', userId)
+  const { count } = await supabase
+    .from('invoices')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
   const invoiceNumber = `${year}-${String((count || 0) + 1).padStart(4, '0')}`
 
   const { data: invoice, error: iErr } = await supabase
@@ -22,11 +25,7 @@ export const POST = withAuth(async (_req, userId, { params }) => {
       quote_id: quote.id,
       invoice_number: invoiceNumber,
       status: 'neplaceno',
-      subtotal: quote.subtotal,
-      discount_percent: quote.discount_percent,
-      discount_amount: quote.discount_amount,
       total_amount: quote.total_amount,
-      total: quote.total,
       issued_at: new Date().toISOString(),
     })
     .select()
@@ -35,7 +34,14 @@ export const POST = withAuth(async (_req, userId, { params }) => {
 
   if (quote.items?.length) {
     await supabase.from('quote_items').insert(
-      quote.items.map((i: any) => ({ ...i, id: undefined, quote_id: undefined, invoice_id: invoice.id }))
+      quote.items.map((i: any) => ({
+        invoice_id: invoice.id,
+        name: i.name,
+        unit: i.unit,
+        quantity: i.quantity,
+        price: i.price,
+        total: i.total,
+      }))
     )
   }
 

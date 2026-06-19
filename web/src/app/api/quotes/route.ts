@@ -14,22 +14,24 @@ export const GET = withAuth(async (req, userId) => {
   if (status) query = query.eq('status', status)
   const { data, error } = await query
   if (error) return err(error.message, 500)
-  return ok({ quotes: data })
+  // map total_amount -> total for frontend compatibility
+  const quotes = (data || []).map((q: any) => ({ ...q, total: q.total_amount }))
+  return ok({ quotes })
 })
 
 export const POST = withAuth(async (req, userId) => {
   const body = await req.json()
   const { items, discount_percent = 0, note, valid_until, client_id } = body
   if (!client_id) return err('Klijent je obavezan')
+
   const subtotal = (items || []).reduce((s: number, i: any) => s + i.quantity * i.price, 0)
-  const total = subtotal * (1 - discount_percent / 100)
+  const total_amount = Math.round(subtotal * (1 - discount_percent / 100) * 100) / 100
 
   const insertData: Record<string, any> = {
     user_id: userId,
     client_id,
     status: 'nacrt',
-    total_amount: total,
-    total,
+    total_amount,
     tracking_token: uuidv4(),
   }
   if (note) insertData.note = note
@@ -57,5 +59,5 @@ export const POST = withAuth(async (req, userId) => {
     if (itemsError) return err(itemsError.message, 500)
   }
 
-  return ok({ quote }, 201)
+  return ok({ quote: { ...quote, total: total_amount } }, 201)
 })
