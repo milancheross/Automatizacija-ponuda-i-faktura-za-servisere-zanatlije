@@ -27,6 +27,7 @@ function SignaturePad({ onChange }: { onChange: (data: string | null) => void })
     ctx.lineJoin = 'round'
 
     function onDown(e: PointerEvent) {
+      if (!canvas) return
       e.preventDefault()
       drawing.current = true
       canvas.setPointerCapture(e.pointerId)
@@ -35,14 +36,14 @@ function SignaturePad({ onChange }: { onChange: (data: string | null) => void })
       ctx.moveTo(x, y)
     }
     function onMove(e: PointerEvent) {
-      if (!drawing.current) return
+      if (!drawing.current || !canvas) return
       e.preventDefault()
       const { x, y } = getPos(e, canvas)
       ctx.lineTo(x, y)
       ctx.stroke()
     }
-    function onUp(e: PointerEvent) {
-      if (!drawing.current) return
+    function onUp() {
+      if (!drawing.current || !canvas) return
       drawing.current = false
       setIsEmpty(false)
       onChange(canvas.toDataURL('image/png'))
@@ -59,7 +60,8 @@ function SignaturePad({ onChange }: { onChange: (data: string | null) => void })
   }, [onChange])
 
   function clear() {
-    const canvas = canvasRef.current!
+    const canvas = canvasRef.current
+    if (!canvas) return
     const ctx = canvas.getContext('2d')!
     ctx.clearRect(0, 0, canvas.width, canvas.height)
     setIsEmpty(true)
@@ -134,20 +136,18 @@ export default function QuotePortalClient({ quote, token }: { quote: any; token:
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-2xl mx-auto">
-
-        {/* Header */}
         <div className="bg-[#1e3a8a] text-white rounded-2xl p-6 mb-6">
           <div className="text-blue-300 text-xs font-bold tracking-widest mb-1">PONUDA OD</div>
           <div className="text-xl font-bold">{company.company_name || 'Servis Ponuda'}</div>
           {company.phone && <div className="text-blue-200 text-sm mt-1">📞 {company.phone}</div>}
           {quote.quote_number && <div className="text-blue-300 text-sm mt-1">Br. ponude: {quote.quote_number}</div>}
           <div className="mt-4 text-3xl font-bold">{(quote.total || 0).toLocaleString('sr-RS')} RSD</div>
-          <div className="text-blue-200 text-sm mt-1">Kreirano: {new Date(quote.created_at).toLocaleDateString('sr-RS')}
+          <div className="text-blue-200 text-sm mt-1">
+            Kreirano: {new Date(quote.created_at).toLocaleDateString('sr-RS')}
             {quote.valid_until && ` · Važi do: ${new Date(quote.valid_until).toLocaleDateString('sr-RS')}`}
           </div>
         </div>
 
-        {/* Client */}
         {client.name && (
           <div className="bg-white rounded-xl border border-gray-200 p-5 mb-4 shadow-sm">
             <div className="text-xs font-bold text-blue-600 uppercase tracking-wider mb-2">Za</div>
@@ -156,7 +156,6 @@ export default function QuotePortalClient({ quote, token }: { quote: any; token:
           </div>
         )}
 
-        {/* Items */}
         <div className="bg-white rounded-xl border border-gray-200 p-5 mb-4 shadow-sm">
           <div className="text-xs font-bold text-blue-600 uppercase tracking-wider mb-3">Stavke</div>
           <table className="w-full text-sm">
@@ -177,12 +176,6 @@ export default function QuotePortalClient({ quote, token }: { quote: any; token:
               ))}
             </tbody>
           </table>
-          {quote.discount_percent > 0 && (
-            <div className="mt-3 flex justify-between text-sm text-red-600">
-              <span>Popust ({quote.discount_percent}%):</span>
-              <span>-{(quote.total / (1 - quote.discount_percent / 100) * quote.discount_percent / 100).toLocaleString('sr-RS')} RSD</span>
-            </div>
-          )}
           <div className="mt-4 flex justify-between font-bold text-base border-t pt-3">
             <span>UKUPNO:</span>
             <span className="text-[#2563EB]">{(quote.total || 0).toLocaleString('sr-RS')} RSD</span>
@@ -195,24 +188,19 @@ export default function QuotePortalClient({ quote, token }: { quote: any; token:
           </div>
         )}
 
-        {/* Actions */}
         {status === 'poslata' && !showSignForm && (
           <div className="flex gap-3">
-            <button
-              onClick={() => setShowSignForm(true)}
+            <button onClick={() => setShowSignForm(true)}
               className="flex-1 bg-green-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-green-700">
               ✓ Prihvatam ponudu
             </button>
-            <button
-              onClick={handleDecline}
-              disabled={acting}
+            <button onClick={handleDecline} disabled={acting}
               className="flex-1 bg-white border-2 border-red-300 text-red-600 py-4 rounded-xl font-bold hover:bg-red-50 disabled:opacity-60">
               ✕ Odbijam
             </button>
           </div>
         )}
 
-        {/* Signature form */}
         {status === 'poslata' && showSignForm && (
           <form onSubmit={handleAccept} className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
             <h2 className="text-lg font-bold text-gray-900 mb-1">Potpišite ponudu</h2>
@@ -220,13 +208,9 @@ export default function QuotePortalClient({ quote, token }: { quote: any; token:
 
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1">Ime i prezime *</label>
-              <input
-                type="text"
-                value={signedBy}
-                onChange={e => setSignedBy(e.target.value)}
+              <input type="text" value={signedBy} onChange={e => setSignedBy(e.target.value)}
                 placeholder="npr. Marko Marković"
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
 
             <div className="mb-4">
@@ -244,9 +228,7 @@ export default function QuotePortalClient({ quote, token }: { quote: any; token:
 
             <div className="flex gap-3">
               <button type="button" onClick={() => setShowSignForm(false)}
-                className="px-5 py-3 border border-gray-300 rounded-xl text-sm text-gray-600 hover:bg-gray-50">
-                Nazad
-              </button>
+                className="px-5 py-3 border border-gray-300 rounded-xl text-sm text-gray-600 hover:bg-gray-50">Nazad</button>
               <button type="submit" disabled={acting}
                 className="flex-1 bg-green-600 text-white py-3 rounded-xl font-bold text-sm hover:bg-green-700 disabled:opacity-60">
                 {acting ? 'Čuvanje...' : '✓ Potvrdi i prihvati ponudu'}
@@ -259,9 +241,7 @@ export default function QuotePortalClient({ quote, token }: { quote: any; token:
           <div className="bg-green-50 border border-green-200 rounded-2xl p-6 text-center">
             <div className="text-4xl mb-3">✅</div>
             <div className="font-bold text-green-800 text-xl mb-2">Prihvatili ste ponudu</div>
-            <div className="text-green-700 text-sm">
-              Izvođač radova će Vas kontaktirati radi dogovora.
-            </div>
+            <div className="text-green-700 text-sm">Izvođač radova će Vas kontaktirati radi dogovora.</div>
             {signedInfo && (
               <div className="mt-4 bg-white rounded-xl p-4 text-left text-xs text-gray-500 space-y-1">
                 <div>✍️ Potpisao: <span className="font-medium text-gray-700">{signedInfo.by}</span></div>
@@ -277,7 +257,6 @@ export default function QuotePortalClient({ quote, token }: { quote: any; token:
             <div className="font-bold text-red-800 text-xl">Odbili ste ponudu</div>
           </div>
         )}
-
       </div>
     </div>
   )
