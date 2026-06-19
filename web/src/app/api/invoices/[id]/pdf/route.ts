@@ -29,7 +29,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
   const { data: user } = await supabase.from('users').select('company_name,address,phone').eq('id', payload.userId).single()
 
-  const pdfBuffer = await renderToBuffer(buildQuotePdf({
+  const buffer = await renderToBuffer(buildQuotePdf({
     type: 'faktura',
     number: invoice.invoice_number,
     date: new Date(invoice.issued_at).toLocaleDateString('sr-RS'),
@@ -44,7 +44,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     total: Number(invoice.total_amount),
   }))
 
-  return new NextResponse(pdfBuffer, {
+  return new NextResponse(new Uint8Array(buffer), {
     headers: {
       'Content-Type': 'application/pdf',
       'Content-Disposition': `attachment; filename="faktura-${invoice.invoice_number}.pdf"`,

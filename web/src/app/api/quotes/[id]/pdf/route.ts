@@ -23,8 +23,9 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
   const { data: user } = await supabase.from('users').select('company_name,address,phone').eq('id', payload.userId).single()
 
-  const pdfBuffer = await renderToBuffer(buildQuotePdf({
+  const buffer = await renderToBuffer(buildQuotePdf({
     type: 'ponuda',
+    number: quote.quote_number,
     date: new Date(quote.created_at).toLocaleDateString('sr-RS'),
     companyName: user?.company_name || 'Firma',
     companyAddress: user?.address,
@@ -37,10 +38,9 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     total: Number(quote.total_amount),
     discountPercent: quote.discount_percent ? Number(quote.discount_percent) : undefined,
     note: quote.note,
-    number: quote.quote_number,
   }))
 
-  return new NextResponse(pdfBuffer, {
+  return new NextResponse(new Uint8Array(buffer), {
     headers: {
       'Content-Type': 'application/pdf',
       'Content-Disposition': `attachment; filename="ponuda-${quote.quote_number || params.id.slice(0, 8)}.pdf"`,
