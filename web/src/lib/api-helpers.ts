@@ -5,15 +5,20 @@ type Handler = (req: NextRequest, userId: string, ctx: { params: Record<string, 
 
 export function withAuth(handler: Handler) {
   return async (req: NextRequest, ctx: { params: Record<string, string> }) => {
-    const authHeader = req.headers.get('authorization')
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    try {
+      const authHeader = req.headers.get('authorization')
+      if (!authHeader?.startsWith('Bearer ')) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      }
+      const payload = verifyToken(authHeader.slice(7))
+      if (!payload) {
+        return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
+      }
+      return await handler(req, payload.userId, ctx)
+    } catch (e: any) {
+      console.error('[API Error]', e)
+      return NextResponse.json({ error: e?.message || 'Server error' }, { status: 500 })
     }
-    const payload = verifyToken(authHeader.slice(7))
-    if (!payload) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
-    }
-    return handler(req, payload.userId, ctx)
   }
 }
 
