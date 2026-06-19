@@ -1,11 +1,15 @@
-import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer'
+import React from 'react'
+import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer'
+import type { DocumentProps } from '@react-pdf/renderer'
 
 const styles = StyleSheet.create({
   page: { fontFamily: 'Helvetica', fontSize: 10, padding: 40, color: '#1a1a1a' },
   header: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 32 },
   companyName: { fontSize: 18, fontFamily: 'Helvetica-Bold', color: '#1e3a8a' },
   companyMeta: { fontSize: 9, color: '#6b7280', marginTop: 2 },
+  badgeWrap: { alignItems: 'flex-end' },
   badge: { backgroundColor: '#1e3a8a', color: 'white', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 4, fontSize: 10, fontFamily: 'Helvetica-Bold' },
+  dateTxt: { fontSize: 9, color: '#6b7280', marginTop: 6, textAlign: 'right' },
   section: { marginBottom: 16 },
   label: { fontSize: 8, fontFamily: 'Helvetica-Bold', color: '#2563eb', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 },
   clientName: { fontSize: 12, fontFamily: 'Helvetica-Bold' },
@@ -22,7 +26,7 @@ const styles = StyleSheet.create({
   footer: { position: 'absolute', bottom: 30, left: 40, right: 40, textAlign: 'center', fontSize: 8, color: '#9ca3af' },
 })
 
-interface PdfData {
+export interface PdfData {
   type: 'ponuda' | 'faktura'
   number?: string
   date: string
@@ -40,36 +44,33 @@ function fmt(n: number) {
   return n.toLocaleString('de-DE') + ' RSD'
 }
 
-export function QuotePdf({ data }: { data: PdfData }) {
+export function buildQuotePdf(data: PdfData): React.ReactElement<DocumentProps> {
   const subtotal = data.items.reduce((s, i) => s + i.total, 0)
   const discountAmt = data.discountPercent ? subtotal * data.discountPercent / 100 : 0
 
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        {/* Header */}
         <View style={styles.header}>
           <View>
             <Text style={styles.companyName}>{data.companyName}</Text>
-            {data.companyAddress && <Text style={styles.companyMeta}>{data.companyAddress}</Text>}
-            {data.companyPhone && <Text style={styles.companyMeta}>{data.companyPhone}</Text>}
+            {data.companyAddress ? <Text style={styles.companyMeta}>{data.companyAddress}</Text> : null}
+            {data.companyPhone ? <Text style={styles.companyMeta}>{data.companyPhone}</Text> : null}
           </View>
-          <View>
+          <View style={styles.badgeWrap}>
             <Text style={styles.badge}>{data.type.toUpperCase()}{data.number ? ` #${data.number}` : ''}</Text>
-            <Text style={[styles.companyMeta, { marginTop: 6, textAlign: 'right' }]}>{data.date}</Text>
+            <Text style={styles.dateTxt}>{data.date}</Text>
           </View>
         </View>
 
-        {/* Client */}
         <View style={styles.section}>
           <Text style={styles.label}>Klijent</Text>
           <Text style={styles.clientName}>{data.client.name}</Text>
-          {data.client.phone && <Text style={styles.clientMeta}>Tel: {data.client.phone}</Text>}
-          {data.client.email && <Text style={styles.clientMeta}>Email: {data.client.email}</Text>}
-          {data.client.address && <Text style={styles.clientMeta}>{data.client.address}</Text>}
+          {data.client.phone ? <Text style={styles.clientMeta}>Tel: {data.client.phone}</Text> : null}
+          {data.client.email ? <Text style={styles.clientMeta}>Email: {data.client.email}</Text> : null}
+          {data.client.address ? <Text style={styles.clientMeta}>{data.client.address}</Text> : null}
         </View>
 
-        {/* Items */}
         <View style={styles.section}>
           <Text style={styles.label}>Stavke</Text>
           <View style={styles.tableHeader}>
@@ -86,30 +87,28 @@ export function QuotePdf({ data }: { data: PdfData }) {
           ))}
         </View>
 
-        {/* Totals */}
         <View style={styles.totalBox}>
           <View style={styles.totalRow}>
             <Text>Osnovica:</Text><Text>{fmt(subtotal)}</Text>
           </View>
-          {discountAmt > 0 && (
+          {discountAmt > 0 ? (
             <View style={styles.totalRow}>
               <Text>Popust ({data.discountPercent}%):</Text><Text>- {fmt(discountAmt)}</Text>
             </View>
-          )}
+          ) : null}
           <View style={styles.totalFinal}>
             <Text>UKUPNO:</Text><Text>{fmt(data.total)}</Text>
           </View>
         </View>
 
-        {/* Note */}
-        {data.note && (
+        {data.note ? (
           <View style={styles.note}>
             <Text>Napomena: {data.note}</Text>
           </View>
-        )}
+        ) : null}
 
         <Text style={styles.footer}>Generisano • {data.companyName}</Text>
       </Page>
     </Document>
-  )
+  ) as React.ReactElement<DocumentProps>
 }

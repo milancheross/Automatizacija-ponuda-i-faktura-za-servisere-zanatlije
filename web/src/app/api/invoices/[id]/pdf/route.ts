@@ -2,8 +2,7 @@ import { renderToBuffer } from '@react-pdf/renderer'
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { verifyToken } from '@/lib/auth'
-import { QuotePdf } from '@/lib/pdf-template'
-import React from 'react'
+import { buildQuotePdf } from '@/lib/pdf-template'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -30,25 +29,20 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
   const { data: user } = await supabase.from('users').select('company_name,address,phone').eq('id', payload.userId).single()
 
-  const pdfBuffer = await renderToBuffer(
-    React.createElement(QuotePdf, {
-      data: {
-        type: 'faktura',
-        number: invoice.invoice_number,
-        date: new Date(invoice.issued_at).toLocaleDateString('sr-RS'),
-        companyName: user?.company_name || 'Firma',
-        companyAddress: user?.address,
-        companyPhone: user?.phone,
-        client: invoice.client || { name: 'Nepoznat' },
-        items: items.map((i: any) => ({
-          name: i.name, unit: i.unit,
-          quantity: Number(i.quantity), price: Number(i.price), total: Number(i.total),
-        })),
-        total: Number(invoice.total_amount),
-        note: undefined,
-      },
-    })
-  )
+  const pdfBuffer = await renderToBuffer(buildQuotePdf({
+    type: 'faktura',
+    number: invoice.invoice_number,
+    date: new Date(invoice.issued_at).toLocaleDateString('sr-RS'),
+    companyName: user?.company_name || 'Firma',
+    companyAddress: user?.address,
+    companyPhone: user?.phone,
+    client: invoice.client || { name: 'Nepoznat' },
+    items: items.map((i: any) => ({
+      name: i.name, unit: i.unit,
+      quantity: Number(i.quantity), price: Number(i.price), total: Number(i.total),
+    })),
+    total: Number(invoice.total_amount),
+  }))
 
   return new NextResponse(pdfBuffer, {
     headers: {
