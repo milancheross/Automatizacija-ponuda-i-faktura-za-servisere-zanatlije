@@ -1,6 +1,10 @@
 export type QuoteStatus = 'nacrt' | 'poslata' | 'prihvacena' | 'odbijena'
 export type InvoiceStatus = 'neplaceno' | 'placeno'
 export type PriceCategory = 'rad' | 'materijal' | 'ostalo'
+export type ClientType = 'person' | 'business'
+export type LegalForm = 'doo' | 'entrepreneur' | 'other' | 'unknown'
+export type VatStatus = 'in_vat' | 'out_of_vat' | 'unknown'
+export type EntrepreneurTaxMode = 'lump_sum' | 'books' | 'unknown'
 
 export interface User {
   id: string
@@ -16,10 +20,23 @@ export interface User {
 export interface Client {
   id: string
   user_id: string
+  /** Universal display name: full name for person, company/trade name for business */
   name: string
+  client_type: ClientType
   phone?: string
   email?: string
   address?: string
+  notes?: string
+  // Business-only fields
+  company_name?: string
+  contact_person?: string
+  tax_id?: string
+  registration_number?: string
+  billing_address?: string
+  job_site_address?: string
+  legal_form?: LegalForm
+  vat_status?: VatStatus
+  entrepreneur_tax_mode?: EntrepreneurTaxMode
   created_at: string
 }
 

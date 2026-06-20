@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { clientDisplayName } from '@/lib/client-utils'
 
 export default function ClientsPage() {
   const [clients, setClients] = useState<any[]>([])
@@ -38,18 +39,31 @@ export default function ClientsPage() {
         </div>
       ) : (
         <div className="space-y-2">
-          {clients.map((c: any) => (
-            <Link key={c.id} href={`/clients/${c.id}`} className="flex items-center gap-3 bg-white rounded-xl p-4 hover:shadow-sm transition-shadow border border-gray-100">
-              <div className="w-11 h-11 rounded-full bg-[#1e3a8a] flex items-center justify-center text-white font-bold text-sm shrink-0">
-                {initials(c.name)}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="font-semibold text-gray-900">{c.name}</div>
-                <div className="text-sm text-gray-500 truncate">{c.phone || c.email || '—'}</div>
-              </div>
-              <span className="text-gray-400">›</span>
-            </Link>
-          ))}
+          {clients.map((c: any) => {
+            const isBusiness = (c.client_type || 'person') === 'business'
+            const name = clientDisplayName(c)
+            return (
+              <Link key={c.id} href={`/clients/${c.id}`} className="flex items-center gap-3 bg-white rounded-xl p-4 hover:shadow-sm transition-shadow border border-gray-100">
+                <div className="w-11 h-11 rounded-full bg-[#1e3a8a] flex items-center justify-center text-white font-bold text-sm shrink-0">
+                  {initials(name)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-semibold text-gray-900 truncate">{name}</span>
+                    {isBusiness && (
+                      <span className="shrink-0 text-xs font-semibold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">Firma</span>
+                    )}
+                  </div>
+                  <div className="text-sm text-gray-500 truncate">
+                    {isBusiness
+                      ? (c.contact_person || c.phone || c.email || '—')
+                      : (c.phone || c.email || '—')}
+                  </div>
+                </div>
+                <span className="text-gray-400">›</span>
+              </Link>
+            )
+          })}
         </div>
       )}
 

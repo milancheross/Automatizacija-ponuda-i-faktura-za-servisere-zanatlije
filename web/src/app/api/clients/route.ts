@@ -1,4 +1,3 @@
-import { NextRequest } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { withAuth, ok, err } from '@/lib/api-helpers'
 
@@ -16,11 +15,42 @@ export const GET = withAuth(async (_req, userId) => {
 
 export const POST = withAuth(async (req, userId) => {
   const body = await req.json()
-  const { name, phone, email, address } = body
-  if (!name) return err('Ime klijenta je obavezno')
+  const {
+    client_type = 'person',
+    name, phone, email, address, notes,
+    company_name, contact_person, tax_id, registration_number,
+    billing_address, job_site_address,
+    legal_form = 'unknown', vat_status = 'unknown', entrepreneur_tax_mode = 'unknown',
+  } = body
+
+  if (!name) return err('Ime / naziv firme je obavezno')
+
+  const payload: Record<string, unknown> = {
+    user_id: userId,
+    client_type,
+    name,
+    phone: phone || null,
+    email: email || null,
+    notes: notes || null,
+  }
+
+  if (client_type === 'person') {
+    payload.address = address || null
+  } else {
+    payload.company_name = company_name || name
+    payload.contact_person = contact_person || null
+    payload.tax_id = tax_id || null
+    payload.registration_number = registration_number || null
+    payload.billing_address = billing_address || null
+    payload.job_site_address = job_site_address || null
+    payload.legal_form = legal_form
+    payload.vat_status = vat_status
+    payload.entrepreneur_tax_mode = entrepreneur_tax_mode
+  }
+
   const { data, error } = await supabase
     .from('clients')
-    .insert({ user_id: userId, name, phone, email, address })
+    .insert(payload)
     .select()
     .single()
   if (error) return err(error.message, 500)

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import StatusBadge from '@/components/StatusBadge'
+import { clientDisplayName } from '@/lib/client-utils'
 
 function fmt(n: number) { return (n || 0).toLocaleString('sr-RS') + ' RSD' }
 
@@ -27,6 +28,9 @@ export default function InvoiceDetailPage() {
   if (loading) return <div className="p-4 md:p-8"><div className="h-64 bg-gray-200 rounded-xl animate-pulse" /></div>
   if (!invoice || invoice.error) return <div className="p-4">Faktura nije pronađena</div>
 
+  const c = invoice.client
+  const isBusiness = c?.client_type === 'business'
+
   return (
     <div className="p-4 md:p-8 max-w-2xl">
       <div className="flex items-center gap-3 mb-4">
@@ -35,7 +39,22 @@ export default function InvoiceDetailPage() {
         <StatusBadge status={invoice.status} />
       </div>
       <div className="bg-white rounded-xl p-4 border border-gray-100 mb-4 space-y-2">
-        <div className="flex justify-between text-sm"><span className="text-gray-500">Klijent</span><span className="font-medium">{invoice.client?.name || '—'}</span></div>
+        <div className="flex justify-between text-sm">
+          <span className="text-gray-500">Klijent</span>
+          <span className="font-medium text-right">{clientDisplayName(c)}</span>
+        </div>
+        {isBusiness && c?.contact_person && (
+          <div className="flex justify-between text-sm"><span className="text-gray-500">Kontakt osoba</span><span>{c.contact_person}</span></div>
+        )}
+        {isBusiness && c?.tax_id && (
+          <div className="flex justify-between text-sm"><span className="text-gray-500">PIB</span><span>{c.tax_id}</span></div>
+        )}
+        {isBusiness && c?.billing_address && (
+          <div className="flex justify-between text-sm"><span className="text-gray-500">Adresa sedišta</span><span className="text-right max-w-[60%]">{c.billing_address}</span></div>
+        )}
+        {c?.phone && (
+          <div className="flex justify-between text-sm"><span className="text-gray-500">Telefon</span><span>{c.phone}</span></div>
+        )}
         <div className="flex justify-between text-sm"><span className="text-gray-500">Datum izdavanja</span><span>{invoice.issued_at}</span></div>
         {invoice.due_date && <div className="flex justify-between text-sm"><span className="text-gray-500">Rok plaćanja</span><span>{invoice.due_date}</span></div>}
         <div className="flex justify-between text-base font-bold pt-1 border-t border-gray-100"><span>Ukupno</span><span className="text-[#1e3a8a]">{fmt(invoice.total_amount)}</span></div>
