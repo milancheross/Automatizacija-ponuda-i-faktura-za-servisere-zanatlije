@@ -5,35 +5,35 @@ import { useState } from 'react'
 const FAQS = [
   {
     q: 'Da li klijent mora da ima nalog?',
-    a: 'Ne. Klijentu šalješ link, on otvara ponudu u browseru bez registracije i može da je prihvati ili odbije.',
+    a: 'Ne. Klijentu šalješ link, on otvara ponudu u browseru bez registracije i može da je prihvati ili odbije sa digitalnim potpisom.',
   },
   {
     q: 'Da li mogu da koristim aplikaciju sa telefona?',
-    a: 'Da, u potpunosti. Servis Ponuda je dizajnirana da radi na mobilnom uređaju — kreiranje ponuda, pregled klijenata, slanje, sve.',
+    a: 'Da, u potpunosti. Servis Ponuda je dizajnirana za mobilno korišćenje — kreiranje ponuda, pregled klijenata, slanje linka, sve radi sa telefona.',
   },
   {
     q: 'Mogu li da napravim fakturu iz ponude?',
-    a: 'Da. Čim klijent prihvati ponudu, jednim klikom kreiras fakturu sa svim istim stavkama. Nema ponovnog unošenja.',
+    a: 'Da. Čim klijent prihvati ponudu, jednim klikom kreiras fakturu sa svim istim stavkama. Nema ponovnog unošenja podataka.',
   },
   {
-    q: 'Mogu li da sačuvam cenovnik sa uslugama?',
-    a: 'Da. Svaki korisnik ima sopstveni cenovnik gde čuvaš usluge i materijale sa cenama, grupisane po kategorijama.',
+    q: 'Mogu li da sačuvam cenovnik sa uslugama i materijalom?',
+    a: 'Da. Imaš sopstveni cenovnik gde čuvaš usluge i materijale sa cenama, grupisane po kategorijama (rad, materijal, ostalo). Koristiš ih u svakoj novoj ponudi.',
   },
   {
     q: 'Da li svaki korisnik vidi samo svoje podatke?',
-    a: 'Da. Svi podaci su vezani za tvoj nalog. Niko drugi nema pristup tvojim klijentima, ponudama ni fakturama.',
+    a: 'Da. Svi podaci su vezani isključivo za tvoj nalog. Niko drugi nema pristup tvojim klijentima, ponudama ni fakturama.',
   },
   {
-    q: 'Da li klijent može da prihvati ili odbije ponudu online?',
-    a: 'Da. Klijent dobija personalizovani link, vidi ponudu, i može da je prihvati sa digitalnim potpisom ili odbije — sve bez papira.',
+    q: 'Da li mogu da šaljem ponudu i bez prethodno sačuvanog klijenta?',
+    a: 'Klijent mora da postoji u sistemu pre pravljenja ponude, ali ga dodaš za manje od 30 sekundi — ime, telefon, i to je to.',
   },
   {
     q: 'Mogu li da exportujem ponudu ili fakturu kao PDF?',
-    a: 'Da. Svaka ponuda i faktura može se preuzeti kao profesionalni PDF dokument sa svim podacima.',
+    a: 'Da. Svaka ponuda i faktura može se preuzeti kao profesionalni PDF dokument sa svim podacima — stavkama, iznosima i kontaktima.',
   },
   {
     q: 'Šta ako prestane da mi treba aplikacija?',
-    a: 'Otkaži u bilo kom trenutku, bez ugovora i bez penala. Starter plan je besplatno zauvek.',
+    a: 'Otkaži u bilo kom trenutku, bez ugovora i bez penala. Nema skrivenih troškova ni minimalnog perioda korišćenja.',
   },
 ]
 
@@ -69,6 +69,14 @@ export default function FAQSection() {
             <FAQItem key={faq.q} q={faq.q} a={faq.a} />
           ))}
         </div>
+
+        <p className="text-center text-gray-500 text-sm mt-8">
+          Imaš još pitanja?{' '}
+          <a href="mailto:podrska@servisponuda.rs" className="text-[#1e3a8a] font-semibold hover:underline">
+            Piši nam
+          </a>{' '}
+          — odgovaramo brzo.
+        </p>
       </div>
     </section>
   )

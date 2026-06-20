@@ -1,8 +1,8 @@
 const MOBILE_POINTS = [
-  { icon: '🚐', text: 'Kreiraj ponudu iz komija dok si kod klijenta' },
-  { icon: '📍', text: 'Pošalji link odmah nakon obilaska' },
+  { icon: '🚐', text: 'Završio si obilazak — složi ponudu odmah, sa telefona' },
+  { icon: '📤', text: 'Pošalji link klijentu pre nego što dođeš kući' },
   { icon: '🔔', text: 'Vidi kada je klijent otvorio ponudu' },
-  { icon: '✅', text: 'Prihvati ili odbij — bez papira' },
+  { icon: '✅', text: 'Klijent prihvata online — bez papira i ponovnog dolaska' },
 ]
 
 export default function MobileSection() {
@@ -12,18 +12,20 @@ export default function MobileSection() {
         <div className="flex flex-col md:flex-row md:items-center gap-10 md:gap-16">
           <div className="md:flex-1 text-white">
             <div className="inline-flex items-center gap-2 bg-blue-800 text-blue-200 text-xs font-semibold px-3 py-1.5 rounded-full mb-6">
-              📱 Mobile-first dizajn
+              📱 Radi sa terena
             </div>
             <h2 className="text-3xl md:text-4xl font-bold mb-5 leading-tight">
-              Radi sa telefona, sa terena, odmah
+              Klijent pita za cenu. Za 2 minuta ima ponudu u inboxu.
             </h2>
-            <p className="text-blue-200 text-lg leading-relaxed mb-8">
-              Servis Ponuda nije desktop kancelarijski alat. Dizajniran je da radi na telefonu —
-              jer ti ne sediš za računarom dok radiš posao.
+            <p className="text-blue-200 text-lg leading-relaxed mb-4">
+              Servis Ponuda nije kancelarijski softver. Dizajniran je za majstore koji ne sede za računarom dok rade posao — jer tvoj posao se dešava na terenu.
+            </p>
+            <p className="text-blue-300 text-base leading-relaxed mb-8">
+              Iz komija, sa klijentove lokacije, posle obilaska — pokreneš telefon i za 2 minuta šalješ profesionalnu ponudu. Klijent je odmah vidi, ti vidiš kada je otvorio.
             </p>
             <ul className="space-y-4">
               {MOBILE_POINTS.map(p => (
-                <li key={p.text} className="flex items-center gap-4">
+                <li key={p.text} className="flex items-start gap-4">
                   <span className="text-2xl w-10 shrink-0">{p.icon}</span>
                   <span className="text-blue-100">{p.text}</span>
                 </li>

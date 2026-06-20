@@ -1,23 +1,25 @@
+import Link from 'next/link'
+
 const STEPS = [
   {
     num: '1',
     icon: '👤',
     title: 'Dodaj klijenta',
-    desc: 'Unesite ime, telefon i adresu klijenta. Svaki klijent ima svoju karticu sa istorijom ponuda i kontakata.',
-    detail: 'Pretraga, filteri, biljeke o kontaktu',
+    desc: 'Sačuvaj ime, telefon i adresu klijenta. Više nikad ne tražiš kontakt po porukama — sve je na jednom mestu sa istorijom svih ponuda.',
+    detail: 'Brza pretraga, kartice klijenata',
   },
   {
     num: '2',
     icon: '📋',
     title: 'Napravi ponudu iz cenovnika',
-    desc: 'Izaberi stavke iz sačuvanog cenovnika (rad, materijal), dodaj ručne stavke, postavi popust. Ponuda je gotova za 2 minuta.',
-    detail: 'Automatski broj ponude, pregled cene po kategorijama',
+    desc: 'Izaberi usluge i materijal iz svog sačuvanog cenovnika. Dodaj stavke, postavi popust — ponuda je gotova za manje od 2 minuta.',
+    detail: 'Automatski broj, pregled po kategorijama',
   },
   {
     num: '3',
     icon: '📤',
     title: 'Pošalji i prati status',
-    desc: 'Klijent dobija link na kome vidi ponudu i može da je prihvati ili odbije sa digitalnim potpisom. Ti vidiš status u realnom vremenu.',
+    desc: 'Klijent dobija link — otvara ponudu bez registracije, prihvata je sa digitalnim potpisom ili odbija. Ti jednim klikom pretvaraš u fakturu.',
     detail: 'Prihvaćena ponuda → faktura jednim klikom',
   },
 ]
@@ -29,11 +31,11 @@ export default function HowItWorks() {
         <div className="text-center mb-14">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Kako radi?</h2>
           <p className="text-gray-600 text-lg max-w-xl mx-auto">
-            Tri koraka od prvog kontakta sa klijentom do plaćene fakture.
+            Tri koraka od prvog kontakta sa klijentom do naplate.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8">
+        <div className="grid md:grid-cols-3 gap-8 mb-12">
           {STEPS.map((step, i) => (
             <div key={step.num} className="relative">
               {i < STEPS.length - 1 && (
@@ -58,6 +60,15 @@ export default function HowItWorks() {
               </div>
             </div>
           ))}
+        </div>
+
+        <div className="text-center">
+          <Link
+            href="/register"
+            className="inline-flex items-center gap-2 bg-[#1e3a8a] text-white px-7 py-3.5 rounded-xl font-bold text-sm hover:bg-blue-900 transition-colors"
+          >
+            Napravi nalog i probaj odmah →
+          </Link>
         </div>
       </div>
     </section>

@@ -1,19 +1,19 @@
 const BEFORE = [
-  'Klijenti su rasuti po Viberu, telefonu i rokovniku',
-  'Cenu pišeš od nule svaki put',
-  'Ne znaš da li je klijent pogledao ponudu',
-  'Fakture pišeš ručno ili u Excelu',
-  'Nemaš pregled šta čeka naplatu',
-  'Teško pratiš ko je prihvatio a ko odbio',
+  'Klijenti rasuti po Viberu, telefonu i papirima',
+  'Svaku ponudu pišeš od nule, gubite vreme',
+  'Ne znaš da li je klijent uopšte pogledao ponudu',
+  'Fakture pišeš ručno, lako se izgube',
+  'Nemaš pojma ko duguje a ko je platio',
+  'Klijent prihvata na reč — bez dokumenta',
 ]
 
 const AFTER = [
   'Svi klijenti na jednom mestu, brza pretraga',
-  'Koristiš sačuvani cenovnik, ponuda za 2 min',
-  'Vidiš kada je klijent otvorio link',
-  'Faktura iz prihvaćene ponude jednim klikom',
-  'Dashboard sa svim neplaćenim fakturama',
-  'Status svake ponude uvek vidljiv',
+  'Koristiš sačuvani cenovnik — ponuda za 2 minuta',
+  'Vidiš kada je klijent otvorio link, u realnom vremenu',
+  'Faktura iz ponude jednim klikom, bez ponovnog unošenja',
+  'Dashboard ti pokazuje sve neplaćene fakture',
+  'Klijent prihvata online sa digitalnim potpisom',
 ]
 
 export default function ProblemSolution() {
@@ -22,7 +22,7 @@ export default function ProblemSolution() {
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-            Znaš kako to izgleda bez alata
+            Prepoznaješ li ovaj haos?
           </h2>
           <p className="text-gray-600 text-lg">
             Previše vremena na administraciju, premalo na pravi posao.
@@ -35,7 +35,7 @@ export default function ProblemSolution() {
               <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center text-xl">😮‍💨</div>
               <div>
                 <div className="font-bold text-gray-900">Bez Servis Ponude</div>
-                <div className="text-xs text-red-600 font-medium">Previše komplikovanosti</div>
+                <div className="text-xs text-red-600 font-medium">Svaki dan isti haos</div>
               </div>
             </div>
             <ul className="space-y-3">

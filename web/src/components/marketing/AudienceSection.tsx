@@ -18,12 +18,12 @@ export default function AudienceSection() {
             Napravljeno za majstore i servise
           </h2>
           <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-            Bez obzira da li radiš sam ili imaš malu ekipu — Servis Ponuda je tu da ti
-            uštedi vreme i da izgledaš profesionalnije pred klijentima.
+            Ako danas šalješ ponude Viberom, pišeš ih u Excelu ili nosiš rokovnik —
+            Servis Ponuda je napravljena za tebe. Bez obzira da li radiš sam ili imaš malu ekipu.
           </p>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
           {TRADES.map(t => (
             <div key={t.label} className="flex flex-col items-center gap-3 p-5 bg-gray-50 rounded-2xl hover:bg-blue-50 transition-colors group">
               <span className="text-4xl">{t.icon}</span>
@@ -32,9 +32,11 @@ export default function AudienceSection() {
           ))}
         </div>
 
-        <p className="text-center text-gray-500 text-sm mt-8">
-          I svaki drugi servis ili zanat koji šalje ponude i fakture klijentima.
-        </p>
+        <div className="bg-blue-50 rounded-2xl p-6 text-center max-w-2xl mx-auto">
+          <p className="text-[#1e3a8a] font-semibold">
+            Sve što šalješ klijentu treba da izgleda profesionalno — čak i kad radiš sam i nemaš sekretaricu ni računovodstvo.
+          </p>
+        </div>
       </div>
     </section>
   )

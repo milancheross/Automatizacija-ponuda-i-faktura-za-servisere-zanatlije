@@ -4,6 +4,7 @@ import Hero from '@/components/marketing/Hero'
 import AudienceSection from '@/components/marketing/AudienceSection'
 import ProblemSolution from '@/components/marketing/ProblemSolution'
 import HowItWorks from '@/components/marketing/HowItWorks'
+import QuotePreviewSection from '@/components/marketing/QuotePreviewSection'
 import FeaturesGrid from '@/components/marketing/FeaturesGrid'
 import MobileSection from '@/components/marketing/MobileSection'
 import ComparisonSection from '@/components/marketing/ComparisonSection'
@@ -31,6 +32,7 @@ export default function LandingPage() {
       <AudienceSection />
       <ProblemSolution />
       <HowItWorks />
+      <QuotePreviewSection />
       <FeaturesGrid />
       <MobileSection />
       <ComparisonSection />
