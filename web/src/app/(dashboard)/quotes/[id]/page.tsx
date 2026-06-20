@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import StatusBadge from '@/components/StatusBadge'
+import { clientDisplayName, PAYMENT_TERMS_LABELS, PRICE_DISPLAY_MODE_LABELS } from '@/lib/client-utils'
 
 function fmt(n: number) { return (n || 0).toLocaleString('sr-RS') + ' RSD' }
 
@@ -15,7 +16,10 @@ export default function QuoteDetailPage() {
   const [quote, setQuote] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(false)
-  const [editForm, setEditForm] = useState({ note: '', valid_until: '', discount_percent: 0 })
+  const [editForm, setEditForm] = useState({
+    note: '', valid_until: '', discount_percent: 0,
+    price_display_mode: 'total_only', payment_terms: 'unknown', payment_terms_note: '',
+  })
   const [trackingUrl, setTrackingUrl] = useState('')
   const [sending, setSending] = useState(false)
   const [converting, setConverting] = useState(false)
@@ -24,7 +28,14 @@ export default function QuoteDetailPage() {
   useEffect(() => {
     fetch(`/api/quotes/${id}`).then(r => r.json()).then(q => {
       setQuote(q)
-      setEditForm({ note: q.note || '', valid_until: q.valid_until || '', discount_percent: q.discount_percent || 0 })
+      setEditForm({
+        note: q.note || '',
+        valid_until: q.valid_until || '',
+        discount_percent: q.discount_percent || 0,
+        price_display_mode: q.price_display_mode || 'total_only',
+        payment_terms: q.payment_terms || 'unknown',
+        payment_terms_note: q.payment_terms_note || '',
+      })
       setLoading(false)
     })
   }, [id])
@@ -70,6 +81,13 @@ export default function QuoteDetailPage() {
     return acc
   }, {})
 
+  const paymentLabel = quote.payment_terms && quote.payment_terms !== 'unknown'
+    ? PAYMENT_TERMS_LABELS[quote.payment_terms]
+    : null
+  const priceDisplayLabel = quote.price_display_mode
+    ? PRICE_DISPLAY_MODE_LABELS[quote.price_display_mode]
+    : null
+
   return (
     <div className="p-4 md:p-8 max-w-2xl pb-4">
       <div className="flex items-center gap-3 mb-4">
@@ -79,11 +97,33 @@ export default function QuoteDetailPage() {
       </div>
 
       <div className="bg-white rounded-xl p-4 border border-gray-100 mb-4 space-y-2">
-        <div className="flex justify-between text-sm">
-          <span className="text-gray-500">Klijent</span>
-          <span className="font-medium">{quote.client?.name || '—'}</span>
-        </div>
-        {quote.client?.phone && <div className="flex justify-between text-sm"><span className="text-gray-500">Telefon</span><span>{quote.client.phone}</span></div>}
+        {(() => {
+          const c = quote.client
+          const isBusiness = c?.client_type === 'business'
+          return (
+            <>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Klijent</span>
+                <span className="font-medium text-right">{clientDisplayName(c)}</span>
+              </div>
+              {isBusiness && c?.contact_person && (
+                <div className="flex justify-between text-sm"><span className="text-gray-500">Kontakt osoba</span><span>{c.contact_person}</span></div>
+              )}
+              {isBusiness && c?.tax_id && (
+                <div className="flex justify-between text-sm"><span className="text-gray-500">PIB</span><span>{c.tax_id}</span></div>
+              )}
+              {isBusiness && (c?.billing_address) && (
+                <div className="flex justify-between text-sm"><span className="text-gray-500">Adresa sedišta</span><span className="text-right max-w-[60%]">{c.billing_address}</span></div>
+              )}
+              {!isBusiness && c?.phone && (
+                <div className="flex justify-between text-sm"><span className="text-gray-500">Telefon</span><span>{c.phone}</span></div>
+              )}
+              {isBusiness && c?.phone && (
+                <div className="flex justify-between text-sm"><span className="text-gray-500">Telefon</span><span>{c.phone}</span></div>
+              )}
+            </>
+          )
+        })()}
         <div className="flex justify-between text-sm">
           <span className="text-gray-500">Kreirano</span>
           <span>{new Date(quote.created_at).toLocaleDateString('sr-RS')}</span>
@@ -120,6 +160,29 @@ export default function QuoteDetailPage() {
               <span className="font-semibold">{fmt(catTotals[cat])}</span>
             </div>
           ) : null)}
+        </div>
+      )}
+
+      {(paymentLabel || quote.payment_terms_note || priceDisplayLabel || quote.billing_notes_snapshot) && (
+        <div className="bg-white rounded-xl border border-gray-100 overflow-hidden mb-4">
+          <div className="px-4 py-2 bg-gray-50 text-xs font-bold text-gray-400 uppercase">Plaćanje i prikaz cene</div>
+          <div className="px-4 py-3 space-y-2">
+            {paymentLabel && (
+              <div className="flex justify-between text-sm"><span className="text-gray-500">Rok plaćanja</span><span className="font-medium">{paymentLabel}</span></div>
+            )}
+            {quote.payment_terms_note && (
+              <div className="flex justify-between text-sm"><span className="text-gray-500">Napomena</span><span className="text-right max-w-[60%]">{quote.payment_terms_note}</span></div>
+            )}
+            {priceDisplayLabel && (
+              <div className="flex justify-between text-sm"><span className="text-gray-500">Prikaz cene</span><span>{priceDisplayLabel}</span></div>
+            )}
+            {quote.billing_notes_snapshot && (
+              <div className="pt-1 border-t border-gray-50">
+                <div className="text-xs text-gray-400 uppercase font-bold mb-0.5">Fakturisanje</div>
+                <div className="text-sm text-gray-700">{quote.billing_notes_snapshot}</div>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -169,6 +232,35 @@ export default function QuoteDetailPage() {
             <input type="number" min="0" max="100" value={editForm.discount_percent} onChange={e => setEditForm(f => ({ ...f, discount_percent: Number(e.target.value) }))}
               className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[#1e3a8a]" />
           </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Prikaz cene</label>
+            <select value={editForm.price_display_mode} onChange={e => setEditForm(f => ({ ...f, price_display_mode: e.target.value }))}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-base bg-white focus:outline-none focus:ring-2 focus:ring-[#1e3a8a]">
+              <option value="total_only">Samo ukupna cena</option>
+              <option value="subtotal_vat_total">Osnovica + PDV + ukupno</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Rok plaćanja</label>
+            <select value={editForm.payment_terms} onChange={e => setEditForm(f => ({ ...f, payment_terms: e.target.value }))}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-base bg-white focus:outline-none focus:ring-2 focus:ring-[#1e3a8a]">
+              <option value="unknown">Nije definisano</option>
+              <option value="immediately">Odmah</option>
+              <option value="advance">Avansno</option>
+              <option value="7_days">7 dana</option>
+              <option value="15_days">15 dana</option>
+              <option value="30_days">30 dana</option>
+              <option value="custom">Po dogovoru</option>
+            </select>
+          </div>
+          {(editForm.payment_terms === 'custom' || editForm.payment_terms_note) && (
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Napomena za plaćanje</label>
+              <input value={editForm.payment_terms_note} onChange={e => setEditForm(f => ({ ...f, payment_terms_note: e.target.value }))}
+                placeholder="npr. 50% avans, ostatak po završetku"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[#1e3a8a]" />
+            </div>
+          )}
           <div className="flex gap-3">
             <button onClick={saveEdit} disabled={saving} className="flex-1 bg-[#1e3a8a] text-white py-3 rounded-xl font-semibold disabled:opacity-50">
               {saving ? 'Čuvanje...' : 'Sačuvaj'}

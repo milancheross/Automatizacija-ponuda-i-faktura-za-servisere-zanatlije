@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
+import { PAYMENT_TERMS_LABELS } from '@/lib/client-utils'
 
 function fmt(n: number) { return (n || 0).toLocaleString('sr-RS') + ' RSD' }
 
@@ -97,7 +98,7 @@ export default function QuotePortalClient({ token, quote, items, company }: Prop
             <>
               <div className="text-5xl mb-4">✅</div>
               <h2 className="text-xl font-bold text-green-700 mb-2">Ponuda prihvaćena!</h2>
-              <p className="text-gray-500 text-sm">Hvala! Servisera ćete kontaktirati uskoro.</p>
+              <p className="text-gray-500 text-sm">Hvala! Serviser će vas kontaktirati uskoro.</p>
             </>
           ) : (
             <>
@@ -123,6 +124,12 @@ export default function QuotePortalClient({ token, quote, items, company }: Prop
   }
 
   const total = quote.total_amount || 0
+  const paymentLabel = quote.payment_terms && quote.payment_terms !== 'unknown'
+    ? PAYMENT_TERMS_LABELS[quote.payment_terms]
+    : null
+  const paymentInfo = paymentLabel || quote.payment_terms_note
+    ? [paymentLabel, quote.payment_terms_note].filter(Boolean).join(' — ')
+    : null
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -163,10 +170,20 @@ export default function QuotePortalClient({ token, quote, items, company }: Prop
             </div>
           </div>
 
-          {quote.note && (
-            <div className="px-6 py-4 bg-gray-50 border-t border-gray-100">
-              <div className="text-xs text-gray-400 uppercase font-bold mb-1">Napomena</div>
-              <div className="text-sm text-gray-700">{quote.note}</div>
+          {(quote.note || paymentInfo) && (
+            <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 space-y-2">
+              {paymentInfo && (
+                <div>
+                  <div className="text-xs text-gray-400 uppercase font-bold mb-1">Rok plaćanja</div>
+                  <div className="text-sm text-gray-700">{paymentInfo}</div>
+                </div>
+              )}
+              {quote.note && (
+                <div>
+                  <div className="text-xs text-gray-400 uppercase font-bold mb-1">Napomena</div>
+                  <div className="text-sm text-gray-700">{quote.note}</div>
+                </div>
+              )}
             </div>
           )}
         </div>
