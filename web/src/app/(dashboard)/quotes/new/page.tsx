@@ -3,6 +3,7 @@
 import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { clientDisplayName } from '@/lib/client-utils'
 
 const CATEGORY_LABELS: Record<string, string> = { rad: '🔧 Rad', materijal: '📦 Materijal', ostalo: '➕ Ostalo' }
 
@@ -25,6 +26,12 @@ function NewQuoteContent() {
   const [showManual, setShowManual] = useState(false)
   const [saving, setSaving] = useState(false)
 
+  // Quote billing/display prefs (prefilled from client)
+  const [priceDisplayMode, setPriceDisplayMode] = useState('total_only')
+  const [paymentTerms, setPaymentTerms] = useState('unknown')
+  const [paymentTermsNote, setPaymentTermsNote] = useState('')
+  const [billingNotesSnapshot, setBillingNotesSnapshot] = useState('')
+
   useEffect(() => {
     Promise.all([fetch('/api/clients').then(r => r.json()), fetch('/api/price-items').then(r => r.json())])
       .then(([c, p]) => {
@@ -32,13 +39,25 @@ function NewQuoteContent() {
         setPriceItems(p || [])
         if (preselectedClientId) {
           const found = (c || []).find((x: any) => x.id === preselectedClientId)
-          if (found) { setSelectedClient(found); setStep(2) }
+          if (found) { applyClientBillingPrefs(found); setSelectedClient(found); setStep(2) }
         }
       })
   }, [preselectedClientId])
 
+  function applyClientBillingPrefs(c: any) {
+    if (c.preferred_price_display_mode && c.preferred_price_display_mode !== 'unknown') {
+      setPriceDisplayMode(c.preferred_price_display_mode)
+    }
+    if (c.payment_terms && c.payment_terms !== 'unknown') {
+      setPaymentTerms(c.payment_terms)
+    }
+    if (c.payment_terms_note) setPaymentTermsNote(c.payment_terms_note)
+    if (c.billing_notes) setBillingNotesSnapshot(c.billing_notes)
+  }
+
   function selectClient(c: any) {
     setSelectedClient(c)
+    applyClientBillingPrefs(c)
     setTimeout(() => setStep(2), 200)
   }
 
@@ -73,7 +92,7 @@ function NewQuoteContent() {
   const laborTotal = items.filter(i => i.category === 'rad').reduce((s, i) => s + i.price * i.quantity, 0)
   const materialTotal = items.filter(i => i.category === 'materijal').reduce((s, i) => s + i.price * i.quantity, 0)
 
-  const filteredClients = clients.filter(c => c.name.toLowerCase().includes(clientSearch.toLowerCase()))
+  const filteredClients = clients.filter(c => (c.name || '').toLowerCase().includes(clientSearch.toLowerCase()) || (c.company_name || '').toLowerCase().includes(clientSearch.toLowerCase()))
   const groupedPriceItems = (priceItems || []).reduce((acc: any, item: any) => {
     const cat = item.category || 'ostalo'
     if (!acc[cat]) acc[cat] = []
@@ -86,7 +105,16 @@ function NewQuoteContent() {
     const res = await fetch('/api/quotes', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ client_id: selectedClient.id, items, note, discount_percent: discount }),
+      body: JSON.stringify({
+        client_id: selectedClient.id,
+        items,
+        note,
+        discount_percent: discount,
+        price_display_mode: priceDisplayMode,
+        payment_terms: paymentTerms,
+        payment_terms_note: paymentTermsNote || null,
+        billing_notes_snapshot: billingNotesSnapshot || null,
+      }),
     })
     if (res.ok) {
       const q = await res.json()
@@ -130,11 +158,11 @@ function NewQuoteContent() {
                     selectedClient?.id === c.id ? 'border-[#1e3a8a] bg-blue-50' : 'border-gray-200 bg-white'
                   }`}>
                   <div className="w-10 h-10 rounded-full bg-[#1e3a8a] flex items-center justify-center text-white font-bold text-sm shrink-0">
-                    {c.name[0].toUpperCase()}
+                    {clientDisplayName(c)[0]?.toUpperCase() || '?'}
                   </div>
                   <div>
-                    <div className="font-semibold text-gray-900">{c.name}</div>
-                    <div className="text-sm text-gray-500">{c.phone || c.email || '—'}</div>
+                    <div className="font-semibold text-gray-900">{clientDisplayName(c)}</div>
+                    <div className="text-sm text-gray-500">{c.phone || c.email || (c.client_type === 'business' ? 'Firma' : '') || '—'}</div>
                   </div>
                 </button>
               ))}
@@ -149,7 +177,7 @@ function NewQuoteContent() {
         {step === 2 && (
           <div>
             <h2 className="text-lg font-bold text-gray-900 mb-1">Stavke ponude</h2>
-            <p className="text-sm text-gray-500 mb-4">Klijent: <strong>{selectedClient?.name}</strong></p>
+            <p className="text-sm text-gray-500 mb-4">Klijent: <strong>{clientDisplayName(selectedClient)}</strong></p>
 
             {Object.keys(groupedPriceItems).length > 0 ? (
               <div className="space-y-4 mb-4">
@@ -239,7 +267,7 @@ function NewQuoteContent() {
 
             <div className="bg-white rounded-xl p-4 border border-gray-100 mb-4">
               <div className="text-sm text-gray-500 mb-1">Klijent</div>
-              <div className="font-semibold text-gray-900">{selectedClient?.name}</div>
+              <div className="font-semibold text-gray-900">{clientDisplayName(selectedClient)}</div>
             </div>
 
             <div className="bg-white rounded-xl border border-gray-100 overflow-hidden mb-4">
@@ -289,6 +317,45 @@ function NewQuoteContent() {
                 <div className="text-right">
                   <span className="text-sm text-gray-500">Ukupno sa popustom: </span>
                   <span className="font-bold text-[#1e3a8a]">{total.toLocaleString('sr-RS')} RSD</span>
+                </div>
+              )}
+            </div>
+
+            <div className="bg-white rounded-xl p-4 border border-gray-100 space-y-3">
+              <div className="text-xs font-bold text-gray-400 uppercase tracking-wider pb-1 border-b border-gray-100">Plaćanje i prikaz cene</div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Prikaz cene na ponudi</label>
+                <select value={priceDisplayMode} onChange={e => setPriceDisplayMode(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[#1e3a8a]">
+                  <option value="total_only">Samo ukupna cena</option>
+                  <option value="subtotal_vat_total">Osnovica + PDV + ukupno</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Rok / uslovi plaćanja</label>
+                <select value={paymentTerms} onChange={e => setPaymentTerms(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[#1e3a8a]">
+                  <option value="unknown">Nije definisano</option>
+                  <option value="immediately">Odmah</option>
+                  <option value="advance">Avansno</option>
+                  <option value="7_days">7 dana</option>
+                  <option value="15_days">15 dana</option>
+                  <option value="30_days">30 dana</option>
+                  <option value="custom">Po dogovoru</option>
+                </select>
+              </div>
+              {(paymentTerms === 'custom' || paymentTermsNote) && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Napomena za plaćanje</label>
+                  <input value={paymentTermsNote} onChange={e => setPaymentTermsNote(e.target.value)}
+                    placeholder="npr. 50% avans, ostatak po završetku"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[#1e3a8a]" />
+                </div>
+              )}
+              {billingNotesSnapshot && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
+                  <div className="text-xs font-bold uppercase text-yellow-600 mb-0.5">Napomena za fakturisanje (iz klijenta)</div>
+                  {billingNotesSnapshot}
                 </div>
               )}
             </div>

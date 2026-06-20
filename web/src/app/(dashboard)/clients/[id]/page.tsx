@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
   LEGAL_FORM_LABELS, VAT_STATUS_LABELS, ENTREPRENEUR_TAX_MODE_LABELS,
+  PAYMENT_TERMS_LABELS, INVOICE_PREFERENCE_LABELS, PRICE_DISPLAY_MODE_LABELS,
 } from '@/lib/client-utils'
 
 type ClientType = 'person' | 'business'
@@ -46,6 +47,13 @@ export default function ClientDetailPage() {
     legal_form: 'unknown', vat_status: 'unknown', entrepreneur_tax_mode: 'unknown',
     notes: '',
   })
+  const [billingForm, setBillingForm] = useState({
+    payment_terms: 'unknown',
+    payment_terms_note: '',
+    invoice_preference: 'unknown',
+    preferred_price_display_mode: 'unknown',
+    billing_notes: '',
+  })
   const [activities, setActivities] = useState<any[]>([])
   const [actForm, setActForm] = useState({ type: 'poziv', note: '', activity_date: new Date().toISOString().split('T')[0] })
   const [loading, setLoading] = useState(true)
@@ -55,6 +63,13 @@ export default function ClientDetailPage() {
   function initFormFromClient(c: any) {
     const type: ClientType = c.client_type === 'business' ? 'business' : 'person'
     setClientType(type)
+    setBillingForm({
+      payment_terms: c.payment_terms || 'unknown',
+      payment_terms_note: c.payment_terms_note || '',
+      invoice_preference: c.invoice_preference || 'unknown',
+      preferred_price_display_mode: c.preferred_price_display_mode || 'unknown',
+      billing_notes: c.billing_notes || '',
+    })
     if (type === 'person') {
       setPersonForm({ name: c.name || '', phone: c.phone || '', email: c.email || '', address: c.address || '', notes: c.notes || '' })
     } else {
@@ -95,7 +110,7 @@ export default function ClientDetailPage() {
     e.preventDefault()
     setSaving(true)
     const payload = clientType === 'person'
-      ? { client_type: 'person', ...personForm }
+      ? { client_type: 'person', ...personForm, ...billingForm }
       : {
           client_type: 'business',
           name: bizForm.name,
@@ -111,6 +126,7 @@ export default function ClientDetailPage() {
           vat_status: bizForm.vat_status,
           entrepreneur_tax_mode: bizForm.entrepreneur_tax_mode,
           notes: bizForm.notes,
+          ...billingForm,
         }
     const res = await fetch(`/api/clients/${id}`, {
       method: 'PUT',
@@ -145,6 +161,9 @@ export default function ClientDetailPage() {
 
   const isBusiness = (client.client_type || 'person') === 'business'
   const displayName = isBusiness ? (client.company_name || client.name) : client.name
+
+  const hasBillingInfo = client.payment_terms !== 'unknown' || client.invoice_preference !== 'unknown' ||
+    client.preferred_price_display_mode !== 'unknown' || client.billing_notes
 
   return (
     <div className="p-4 md:p-8 max-w-2xl">
@@ -250,6 +269,47 @@ export default function ClientDetailPage() {
             </>
           )}
 
+          <div className="text-xs font-bold text-gray-400 uppercase tracking-wider pt-1 pb-1 border-b border-gray-100">Naplata i fakturisanje</div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Uslovi plaćanja</label>
+            <select value={billingForm.payment_terms} onChange={e => setBillingForm(f => ({ ...f, payment_terms: e.target.value }))} className={SELECT}>
+              <option value="unknown">Nije definisano</option>
+              <option value="immediately">Odmah</option>
+              <option value="advance">Avansno</option>
+              <option value="7_days">7 dana</option>
+              <option value="15_days">15 dana</option>
+              <option value="30_days">30 dana</option>
+              <option value="custom">Po dogovoru</option>
+            </select>
+          </div>
+          {(billingForm.payment_terms === 'custom' || billingForm.payment_terms_note) && (
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Napomena za plaćanje</label>
+              <input value={billingForm.payment_terms_note} onChange={e => setBillingForm(f => ({ ...f, payment_terms_note: e.target.value }))} className={FIELD} placeholder="npr. 50% avans, ostatak po završetku" />
+            </div>
+          )}
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Tip dokumenta</label>
+            <select value={billingForm.invoice_preference} onChange={e => setBillingForm(f => ({ ...f, invoice_preference: e.target.value }))} className={SELECT}>
+              <option value="unknown">Nije definisano</option>
+              <option value="simple_consumer">Obična naplata (fizičko lice)</option>
+              <option value="business_invoice">Faktura na firmu</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Podrazumevani prikaz cene na ponudi</label>
+            <select value={billingForm.preferred_price_display_mode} onChange={e => setBillingForm(f => ({ ...f, preferred_price_display_mode: e.target.value }))} className={SELECT}>
+              <option value="unknown">Nije definisano</option>
+              <option value="total_only">Samo ukupna cena</option>
+              <option value="subtotal_vat_total">Osnovica + PDV + ukupno</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Napomena za fakturisanje</label>
+            <textarea value={billingForm.billing_notes} onChange={e => setBillingForm(f => ({ ...f, billing_notes: e.target.value }))} className={FIELD} rows={2}
+              placeholder="npr. račun na firmu, navesti PIB..." />
+          </div>
+
           <div className="flex gap-3 pt-2">
             <button type="submit" disabled={saving} className="flex-1 bg-[#1e3a8a] text-white py-3 rounded-xl font-semibold disabled:opacity-50">
               {saving ? 'Čuvanje...' : 'Sačuvaj'}
@@ -295,6 +355,16 @@ export default function ClientDetailPage() {
             <>
               <SectionHeader title="Napomena" />
               <InfoRow label="" value={client.notes} />
+            </>
+          )}
+          {hasBillingInfo && (
+            <>
+              <SectionHeader title="Naplata i fakturisanje" />
+              <InfoRow label="Uslovi plaćanja" value={client.payment_terms && client.payment_terms !== 'unknown' ? PAYMENT_TERMS_LABELS[client.payment_terms] : undefined} />
+              <InfoRow label="Napomena za plaćanje" value={client.payment_terms_note} />
+              <InfoRow label="Tip dokumenta" value={client.invoice_preference && client.invoice_preference !== 'unknown' ? INVOICE_PREFERENCE_LABELS[client.invoice_preference] : undefined} />
+              <InfoRow label="Prikaz cene na ponudi" value={client.preferred_price_display_mode && client.preferred_price_display_mode !== 'unknown' ? PRICE_DISPLAY_MODE_LABELS[client.preferred_price_display_mode] : undefined} />
+              <InfoRow label="Napomena za fakturisanje" value={client.billing_notes} />
             </>
           )}
           <Link href={`/quotes/new?client=${id}`} className="block w-full text-center bg-[#1e3a8a] text-white py-3 rounded-xl font-semibold mt-4">

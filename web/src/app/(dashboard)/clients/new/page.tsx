@@ -43,8 +43,17 @@ export default function NewClientPage() {
     notes: '',
   })
 
+  const [billingForm, setBillingForm] = useState({
+    payment_terms: 'unknown',
+    payment_terms_note: '',
+    invoice_preference: 'unknown',
+    preferred_price_display_mode: 'unknown',
+    billing_notes: '',
+  })
+
   function setPerson(key: string, val: string) { setPersonForm(f => ({ ...f, [key]: val })) }
   function setBiz(key: string, val: string) { setBizForm(f => ({ ...f, [key]: val })) }
+  function setBilling(key: string, val: string) { setBillingForm(f => ({ ...f, [key]: val })) }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -52,7 +61,7 @@ export default function NewClientPage() {
     setError('')
 
     const payload = clientType === 'person'
-      ? { client_type: 'person', ...personForm }
+      ? { client_type: 'person', ...personForm, ...billingForm }
       : {
           client_type: 'business',
           name: bizForm.name,
@@ -68,6 +77,7 @@ export default function NewClientPage() {
           vat_status: bizForm.vat_status,
           entrepreneur_tax_mode: bizForm.entrepreneur_tax_mode,
           notes: bizForm.notes,
+          ...billingForm,
         }
 
     const res = await fetch('/api/clients', {
@@ -87,7 +97,6 @@ export default function NewClientPage() {
         <h1 className="text-xl font-bold text-gray-900">Novi klijent</h1>
       </div>
 
-      {/* Type selector */}
       <div className="mb-6">
         <div className="text-sm font-medium text-gray-700 mb-2">Tip klijenta</div>
         <div className="grid grid-cols-2 gap-2">
@@ -195,6 +204,42 @@ export default function NewClientPage() {
             </Field>
           </>
         )}
+
+        <SectionHeader title="Naplata i fakturisanje" />
+        <Field label="Uslovi plaćanja">
+          <select value={billingForm.payment_terms} onChange={e => setBilling('payment_terms', e.target.value)} className={SELECT}>
+            <option value="unknown">Nije definisano</option>
+            <option value="immediately">Odmah</option>
+            <option value="advance">Avansno</option>
+            <option value="7_days">7 dana</option>
+            <option value="15_days">15 dana</option>
+            <option value="30_days">30 dana</option>
+            <option value="custom">Po dogovoru</option>
+          </select>
+        </Field>
+        {(billingForm.payment_terms === 'custom' || billingForm.payment_terms_note) && (
+          <Field label="Dodatna napomena za plaćanje">
+            <input value={billingForm.payment_terms_note} onChange={e => setBilling('payment_terms_note', e.target.value)} className={FIELD} placeholder="npr. 50% avans, ostatak po završetku" />
+          </Field>
+        )}
+        <Field label="Tip dokumenta">
+          <select value={billingForm.invoice_preference} onChange={e => setBilling('invoice_preference', e.target.value)} className={SELECT}>
+            <option value="unknown">Nije definisano</option>
+            <option value="simple_consumer">Obična naplata (fizičko lice)</option>
+            <option value="business_invoice">Faktura na firmu</option>
+          </select>
+        </Field>
+        <Field label="Podrazumevani prikaz cene na ponudi">
+          <select value={billingForm.preferred_price_display_mode} onChange={e => setBilling('preferred_price_display_mode', e.target.value)} className={SELECT}>
+            <option value="unknown">Nije definisano</option>
+            <option value="total_only">Samo ukupna cena</option>
+            <option value="subtotal_vat_total">Osnovica + PDV + ukupno</option>
+          </select>
+        </Field>
+        <Field label="Napomena za fakturisanje">
+          <textarea value={billingForm.billing_notes} onChange={e => setBilling('billing_notes', e.target.value)} className={FIELD} rows={2}
+            placeholder="npr. račun na firmu, navesti PIB, avansna faktura..." />
+        </Field>
 
         <button type="submit" disabled={saving}
           className="w-full bg-[#1e3a8a] text-white py-4 rounded-xl font-semibold text-base disabled:opacity-50 mt-2">
