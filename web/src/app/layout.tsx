@@ -8,6 +8,10 @@ export const metadata: Metadata = {
     template: '%s | Servis Ponuda',
   },
   description: 'Profesionalne ponude i fakture za servisere i zanatlije. Radi sa telefona.',
+  icons: {
+    icon: '/logo-servis-ponuda.png',
+    apple: '/logo-servis-ponuda.png',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

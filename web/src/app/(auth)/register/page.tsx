@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/AuthProvider'
+import BrandLogo from '@/components/shared/BrandLogo'
 
 export default function RegisterPage() {
   const { register } = useAuth()
@@ -29,12 +30,11 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#1e3a8a] to-[#2563EB] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-[#1e3a8a] to-[#2563EB] flex items-center justify-center p-4 py-10">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
-        <div className="text-center mb-8">
-          <div className="text-4xl mb-3">🔧</div>
-          <h1 className="text-2xl font-bold text-gray-900">Kreirajte nalog</h1>
-          <p className="text-gray-500 text-sm mt-1">Besplatno, bez kreditne kartice</p>
+        <div className="flex flex-col items-center mb-8">
+          <BrandLogo size="lg" href="/" className="mb-4" />
+          <p className="text-gray-500 text-sm">Besplatno, bez kreditne kartice</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">

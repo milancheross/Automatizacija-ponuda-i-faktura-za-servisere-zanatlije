@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/AuthProvider'
+import BrandLogo from '@/components/shared/BrandLogo'
 
 export default function LoginPage() {
   const { login } = useAuth()
@@ -30,10 +31,9 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#1e3a8a] to-[#2563EB] flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
-        <div className="text-center mb-8">
-          <div className="text-4xl mb-3">🔧</div>
-          <h1 className="text-2xl font-bold text-gray-900">Servis Ponuda</h1>
-          <p className="text-gray-500 text-sm mt-1">Prijavite se na vaš nalog</p>
+        <div className="flex flex-col items-center mb-8">
+          <BrandLogo size="lg" href="/" className="mb-4" />
+          <p className="text-gray-500 text-sm">Prijavite se na vaš nalog</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
