@@ -37,11 +37,27 @@ export async function middleware(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     try {
-      await jwtVerify(token, JWT_SECRET)
+      const { payload } = await jwtVerify(token, JWT_SECRET)
+      if (pathname.startsWith('/api/admin/') && (payload as any).role !== 'admin') {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
     } catch {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
     return NextResponse.next()
+  }
+
+  // Protect admin pages
+  if (pathname.startsWith('/admin')) {
+    const token = req.cookies.get('sp_token')?.value
+    if (!token) return NextResponse.redirect(new URL('/login', req.url))
+    try {
+      const { payload } = await jwtVerify(token, JWT_SECRET)
+      if ((payload as any).role !== 'admin') return NextResponse.redirect(new URL('/dashboard', req.url))
+      return NextResponse.next()
+    } catch {
+      return NextResponse.redirect(new URL('/login', req.url))
+    }
   }
 
   // Protect dashboard pages

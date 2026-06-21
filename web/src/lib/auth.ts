@@ -3,17 +3,17 @@ import bcrypt from 'bcryptjs'
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET!)
 
-export async function signToken(userId: string): Promise<string> {
-  return new SignJWT({ userId })
+export async function signToken(userId: string, role: string = 'user'): Promise<string> {
+  return new SignJWT({ userId, role })
     .setProtectedHeader({ alg: 'HS256' })
     .setExpirationTime('7d')
     .sign(JWT_SECRET)
 }
 
-export async function verifyToken(token: string): Promise<{ userId: string } | null> {
+export async function verifyToken(token: string): Promise<{ userId: string; role: string } | null> {
   try {
     const { payload } = await jwtVerify(token, JWT_SECRET)
-    return payload as { userId: string }
+    return payload as { userId: string; role: string }
   } catch {
     return null
   }

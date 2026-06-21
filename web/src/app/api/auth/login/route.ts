@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
 
     const { data: user, error } = await supabase
       .from('users')
-      .select('id, email, password_hash, company_name, phone, address, pib, logo_url, created_at')
+      .select('id, email, password_hash, company_name, phone, address, pib, logo_url, created_at, role')
       .eq('email', email.toLowerCase())
       .maybeSingle()
 
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     }
 
     const { password_hash: _, ...safeUser } = user
-    const token = await signToken(user.id)
+    const token = await signToken(user.id, user.role || 'user')
 
     // Return token in body for mobile clients; also set httpOnly cookie for web
     const res = NextResponse.json({ user: safeUser, token })
